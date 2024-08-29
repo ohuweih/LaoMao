@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello, World!</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #f5a623, #f76b1c);
+            font-family: 'Poppins', sans-serif;
+            color: #fff;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 50px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            font-size: 3em;
+            margin: 0 0 20px;
+        }
+
+        p {
+            font-size: 1.2em;
+        }
+
+        .wave {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 20vh;
+            background: url('https://www.svgrepo.com/show/13647/wave.svg') repeat-x;
+            transform: rotate(180deg);
+            animation: wave-animation 4s infinite linear;
+        }
+
+        @keyframes wave-animation {
+            from { transform: translate3d(-90px, 0, 0) rotate(180deg); }
+            to { transform: translate3d(85px, 0, 0) rotate(180deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Hello, World!</h1>
+        <p>Welcome to your fancy webpage.</p>
+    </div>
+    <div class="wave"></div>
+</body>
+</html>
