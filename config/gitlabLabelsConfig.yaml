@@ -1,0 +1,20 @@
+labels:
+  - parent:
+    name: "Change Request::Status::"
+    color: '#009966'
+    projectNumber: 1234567
+    children:
+      - name: New
+        description: Indicates a newly created change request pending initial review.
+      - name: Pending Gate 1 Approval
+        description: Awaiting approval for Gate 1 to proceed to the next phase.
+
+  - parent:
+    name: "Priority::"
+    color: '#ed9121'
+    projectNumber: 1234567
+    children:
+      - name: Critical
+        description: Indicates a top-priority issue requiring immediate attention and resolution.
+      - name: High
+        description: Indicates a high-priority item needing prompt action.
