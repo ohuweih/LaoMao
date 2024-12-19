@@ -1,0 +1,9 @@
+projects:
+  - projectId: 1234567
+    labelTag: autoTouch
+    labels:
+      - name: "Change Request::Status::New"
+        firstReminderDate: 10
+        secondReminderDate: 5
+        firstComment: "### Hey please review"
+        secondComment: "### Please Review: "
