@@ -69,7 +69,7 @@ def subtractBusinessDay(start_date, business_days_to_subtract):
     return current_date
 
 
-def updateWorkItems(gl, config)
+def updateWorkItems(gl, config):
     if config['projects']:
         for project in config['projects']:
             print(f"Running through project {project['projectId']}, Checking for Issues and Epics that need to be updated")
@@ -80,30 +80,34 @@ def updateWorkItems(gl, config)
                 updated_at = work_item.updated_at
                 labels = work_item.labels
                 for label in labels:
-                    for config_label in project['labels']
-                        if label == config_label['name']
-                        today = date.today()
-                        second_reminder_date = config_label['secondReminderDate']
-                        past_second_business_date = str(subtractBusinessDay(today, second_reminder_date))
-                        first_reminder_date = configLabel['firstReminderDate']
-                        past_first_business_date = str(subtractBusinessDay(today, first_reminder_date))
+                    for config_label in project['labels']:
+                        if label == config_label['name']:
+                            today = date.today()
+                            second_reminder_date = config_label['secondReminderDate']
+                            past_second_business_date = str(subtractBusinessDay(today, second_reminder_date))
+                            first_reminder_date = configLabel['firstReminderDate']
+                            past_first_business_date = str(subtractBusinessDay(today, first_reminder_date))
 
-                        if updated_at <= past_second_business_date:
-                            print(f"work item Name: {work_item.title}, #{work_item.iid}, needs a second reminder")
-                            work_item.notes.create({'body': config_label['secondComment Name:']})
-                            if project['labelTag'] not in labels:
-                                labels.append(project['labelTag'])
-                                work_item.labels = labels
-                                work_item.save()
-                            continue
+                            if updated_at <= past_second_business_date:
+                                existing_notes = work_item.notes.list()
+                                first_comment_exists = any(config_label['firstComment'] in note.body for note in existing_notes)
+
+                                if first_comment_exists:
+                                    print(f"work item Name: {work_item.title}, #{work_item.iid}, needs a second reminder")
+                                    work_item.notes.create({'body': config_label['secondComment Name:']})
+                                    if project['labelTag'] not in labels:
+                                        labels.append(project['labelTag'])
+                                        work_item.labels = labels
+                                        work_item.save()
+                                    continue
                         
-                        if updated_at <= past_first_business_date:
-                            print(f"Work Item Name: {work_item.title}, #{work_item.iid}, needs a first reminder")
-                            work_item.notes.create({'body': config_label['firstComment']})
-                            if project['labelTag'] not in labels:
-                                labels.append(project['labelTag'])
-                                work_item.labels = labels
-                                work_item.save()
+                            if updated_at <= past_first_business_date:
+                                print(f"Work Item Name: {work_item.title}, #{work_item.iid}, needs a first reminder")
+                                work_item.notes.create({'body': config_label['firstComment']})
+                                if project['labelTag'] not in labels:
+                                    labels.append(project['labelTag'])
+                                    work_item.labels = labels
+                                    work_item.save()
 
 def main():
     '''
