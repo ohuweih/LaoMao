@@ -1,0 +1,38 @@
+stages:
+  - render
+  - deploy
+
+render_adoc:
+  stage: render
+  image: asciidoctor/docker-asciidoctor:latest
+  script:
+  - echo "Checking for changed .adoc files..."
+  - CHANGED_FILES=$(git diff --name-only $CI_MERGE_REQUEST_SOURCE_BRANCH $CI_MERGE_REQUEST_TARGET_BRANCH | grep "\.adoc$")
+  - if [ -z "$CHANGED_FILES" ]; then echo "No .adoc files changed in this MR"; exit 0; fi
+  - for ADOC_FILE in $CHANGED_FILES; do
+      echo "Rendering file: $ADOC_FILE";
+      asciidoctor -o public/${ADOC_FILE%.adoc}.html "$ADOC_FILE";
+    done
+  artifacts:
+    paths:
+      - public/
+    expire_in: 1 hour
+  only:
+    - merge_requests
+
+deploy_pages:
+  stage: deploy
+  script:
+    - echo "Deploying to GitLab Pages..."
+  after_script:
+    - MR_ID=$(curl --silent --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/merge_requests?source_branch=$CI_COMMIT_REF_NAME" | jq '.[0].iid')
+    - PAGES_URL="https://<namespace>.gitlab.io/<project-name>/rendered_output.html"
+    - echo "Adding comment with the rendered file URL to MR #$MR_ID"
+    - curl --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+            --data "body=Rendered AsciiDoc file is available for viewing [here]($PAGES_URL)." \
+            "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/merge_requests/$MR_ID/notes"
+  artifacts:
+    paths:
+      - public/
+  only:
+    - merge_requests
