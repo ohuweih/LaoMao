@@ -70,6 +70,12 @@ def subtractBusinessDay(start_date, business_days_to_subtract):
 
 
 def updateWorkItems(gl, config):
+    '''
+    Reads Gitlab Work Items, Matches on updated data, labels and comments, Then updates the Work Item accordingly    
+        Parameters:
+            gl: Todays date
+            config: Yaml file containing project Id, list of labels to match on, Day threshold, and comments to match on and update with
+    '''
     if config['projects']:
         for project in config['projects']:
             print(f"Running through project {project['projectId']}, Checking for Issues and Epics that need to be updated")
@@ -77,6 +83,8 @@ def updateWorkItems(gl, config):
             work_items = gitlab_project.issues.list(state="opened", all=True)
 
             for work_item in work_items:
+                ### This is a debug Statement, Remove once done Debuging ###
+                print(f"Work Item Title: {work_item.title}, Work Item IID {work_item.iid}, Work Item Type {work_item.type}")
                 updated_at = work_item.updated_at
                 labels = work_item.labels
                 for label in labels:
@@ -85,7 +93,7 @@ def updateWorkItems(gl, config):
                             today = date.today()
                             second_reminder_date = config_label['secondReminderDate']
                             past_second_business_date = str(subtractBusinessDay(today, second_reminder_date))
-                            first_reminder_date = configLabel['firstReminderDate']
+                            first_reminder_date = config_label['firstReminderDate']
                             past_first_business_date = str(subtractBusinessDay(today, first_reminder_date))
 
                             if updated_at <= past_second_business_date:
