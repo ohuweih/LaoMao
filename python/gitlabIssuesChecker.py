@@ -96,7 +96,7 @@ def getIssues(project_id, inital_date, base_url, headers):
     return issues
 
 
-def addComment(comment, base_url, issueId, headers, title):
+def addComment(comment, base_url, issueId, headers, title, label, web_url):
     '''
     Puts a comment on an issue in gitlab
     
@@ -109,15 +109,16 @@ def addComment(comment, base_url, issueId, headers, title):
     '''
     print("Last auto comment past date theshold")
     print("Adding new comment")
+
     comment_data = {
-        "body": comment
+        "body": f"~{label}<br> {web_url}<br> {comment}"
     }
     comment_response = requests.post(
     f"{base_url}/{issueId}/notes",
         headers=headers,
         json=comment_data
     )
-    if comment_response.status_code == 201:
+    if comment_response.status_code == 201 or comment_response.status_code == 202:
         print(f"Comment added to issue {issueId} Title: {title} successfully")
     else:
         print(f"Failed to add comment to issue {issueId} Title: {title}, Status Code: {comment_response.status_code}, Response Text: {comment_response.text}")
@@ -204,7 +205,8 @@ def updateIssues(token):
                                 if updated_at <= past_second_business_date:
                                     print("Checking for second update")
                                     ### Start matching on comments here ###
-                                    getComments(base_url, issueId, headers)
+                                    comment_response = getComments(base_url, issueId, headers)
+                                
 
                                     if comment_response.status_code == 200:
                                         comments = comment_response.json()
@@ -220,8 +222,9 @@ def updateIssues(token):
                                             if str(datetime.now()) > comment_date + str(timedelta(days=secondReminderDate)):
                                                 comment = configLabel['secondComment']
                                                 title = issue['title']
+                                                web_url = issue['web_url']
 
-                                                addComment(comment, base_url, issueId, headers, title)
+                                                addComment(comment, base_url, issueId, headers, title, label, web_url)
                                                 
                                                 # Add label to ticket just in case its not on there already.
                                                 label = project['labelTag']
@@ -229,7 +232,7 @@ def updateIssues(token):
                                                 addLabel(existing_labels, label, base_url, issueId, headers)
                                 
                                 ### Initial update here ###
-                                elif updated_at <= past_first_business_date:
+                                if updated_at <= past_first_business_date:
                                     print("Checking if we need to do initial update")
                                     print("Found one")
                                     print(f"Issue ID: {issueId}, Title: {issue['title']}, needs to be updated.")
@@ -237,7 +240,8 @@ def updateIssues(token):
                                     # This is the comment we will add to the ticket we matched on
                                     comment = configLabel['secondComment']
                                     title = issue['title']
-                                    addComment(comment, base_url, issueId, headers, title)
+                                    web_url = issue['web_url']
+                                    addComment(comment, base_url, issueId, headers, title, label, web_url)
                                     
                                     # Add label to ticket. This is set for tracking purpose.
                                     label = project['labelTag']
