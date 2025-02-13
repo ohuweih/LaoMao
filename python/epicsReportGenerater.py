@@ -12,24 +12,18 @@ def get_epic_notes(gl, group_id, epic_id):
     epic = group.epics.get(epic_id)
     return epic.notes.list(all=True)
 
-def get_epic_events(gl, group_id, epic_id):
-    """Fetches changes in the epic details (title, description, labels, etc.)."""
-    group = gl.groups.get(group_id)
-    epic = group.epics.get(epic_id)
-    events = epic.resource_state_events.list(all=True)
-    
-    event_log = []
-    for event in events:
-        action = "Added" if event.action == "add" else "Removed"
-        event_type = event.resource_type.capitalize()
-        event_log.append({
-            "Type": f"Epic {event_type} {action}",
-            "Author": event.user['name'],
-            "Date": event.created_at,
-            "Content": event.resource_type if event.resource_type else "N/A"
-        })
-    
-    return event_log
+def parse_epic_changes(notes):
+    """Parses system notes for changes in epic details."""
+    change_log = []
+    for note in notes:
+        if note.system:  # System notes track changes like title, description, labels, etc.
+            change_log.append({
+                "Type": "Epic Change",
+                "Author": note.author["name"],
+                "Date": note.created_at,
+                "Content": note.body
+            })
+    return change_log
 
 def get_epic_issues(gl, group_id, epic_id):
     """Fetches issues linked to an epic."""
@@ -60,7 +54,7 @@ def generate_audit_report(gl, group_id, epic_id, output_file):
     """Generates an audit report and saves it to a CSV file."""
     epic = get_epic_details(gl, group_id, epic_id)
     notes = get_epic_notes(gl, group_id, epic_id)
-    epic_events = get_epic_events(gl, group_id, epic_id)
+    epic_changes = parse_epic_changes(notes)
     issues = get_epic_issues(gl, group_id, epic_id)
 
     with open(output_file, mode="w", newline="", encoding="utf-8") as csv_file:
@@ -72,12 +66,12 @@ def generate_audit_report(gl, group_id, epic_id, output_file):
         writer.writerow({"Type": "Epic Title", "Author": "", "Date": "", "Content": epic.title})
         writer.writerow({"Type": "Epic Description", "Author": "", "Date": "", "Content": epic.description})
 
-        for event in epic_events:
+        for change in epic_changes:
             writer.writerow({
-                "Type": event["Type"],
-                "Author": event["Author"],
-                "Date": event["Date"],
-                "Content": event["Content"],
+                "Type": change["Type"],
+                "Author": change["Author"],
+                "Date": change["Date"],
+                "Content": change["Content"],
                 "Last Updated": "",
                 "Closed Date": ""
             })
