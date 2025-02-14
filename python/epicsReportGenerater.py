@@ -11,19 +11,30 @@ def extract_first_heading(description):
 
     # Split by lines and check for a heading pattern
     lines = description.split("\n")
+    extracted_heading = None
+    extracted_text = None
     
-    for line in lines:
+    for i, line in enumerate(lines):
         # Match AsciiDoc (== Heading) or Markdown (# Heading)
-        match = re.match(r"^(?:##|==+)\s*(.+)", line)
+        match = re.match(r"^(?:#|==+)\s*(.+)", line)
         if match:
-            return match.group(1)  # Return the extracted heading
+            extracted_heading = match.group(1)  # Extract heading text
+
+            # Try to capture the next non-empty line
+            for j in range(i + 1, len(lines)):
+                if lines[j].strip():
+                    extracted_text = lines[j].strip()
+                    break
+            break  # Return the extracted heading
 
     # If no heading is found, return the first non-empty line
-    for line in lines:
-        if line.strip():
-            return line.strip()
+    if not extracted_heading:
+        for line in lines:
+            if line.strip():
+                extracted_heading = line.strip()
+                break
 
-    return "No valid heading found"
+    return f"{extracted_heading}\n{extracted_text}" if extracted_text else extracted_heading
 
 def get_epic_details(gl, group_id, epic_id):
     group = gl.groups.get(group_id)
