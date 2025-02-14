@@ -55,7 +55,7 @@ def get_epic_issues(gl, group_id, epic_id):
     """Fetches issues linked to an epic."""
     group = gl.groups.get(group_id)
     epic = group.epics.get(epic_id)
-    return epic.issues.list(all=True))
+    return epic.issues.list(all=True)
 
 
 def get_issue_events(issue):
@@ -85,7 +85,7 @@ def generate_audit_report(gl, group_id, epic_id, output_file):
     epic = get_epic_details(gl, group_id, epic_id)
     notes = get_epic_notes(gl, group_id, epic_id)
     epic_changes = parse_epic_changes(notes)
-#    issues = get_epic_issues(gl, group_id, epic_id)
+    issues = get_epic_issues(gl, group_id, epic_id)
 
 
     with open(output_file, mode="w", newline="", encoding="utf-8") as csv_file:
@@ -119,27 +119,27 @@ def generate_audit_report(gl, group_id, epic_id, output_file):
 
 
         # Linked Issues
-#        for issue in issues:
-#            writer.writerow({
-#                "Type": "Linked Issue",
-#                "Author": issue.author["name"],
-#                "Date": issue.created_at,
-#                "Last Updated": issue.updated_at,
-#                "Closed Date": issue.closed_at if issue.state == "closed" else "N/A",
-#                "Content": f"{issue.title} ({issue.web_url})"
-#            })
+        for issue in issues:
+            writer.writerow({
+                "Type": "Linked Issue",
+                "Author": issue.author["name"],
+                "Date": issue.created_at,
+                "Last Updated": issue.updated_at,
+                "Closed Date": issue.closed_at if issue.state == "closed" else "N/A",
+                "Content": f"{issue.title} ({issue.web_url})"
+            })
 
 
- #           issue_events = get_issue_events(issue)
-#            for event in issue_events:
-#                writer.writerow({
-#                    "Type": event["Type"],
-#                    "Author": event["Author"],
-#                    "Date": event["Date"],
-#                    "Content": event["Content"],
-#                    "Last Updated": "",
-#                    "Closed Date": ""
-#                })
+            issue_events = get_issue_events(issue)
+            for event in issue_events:
+                writer.writerow({
+                    "Type": event["Type"],
+                    "Author": event["Author"],
+                    "Date": event["Date"],
+                    "Content": event["Content"],
+                    "Last Updated": "",
+                    "Closed Date": ""
+                })
 
 
     print(f"Audit report saved as {output_file}")
