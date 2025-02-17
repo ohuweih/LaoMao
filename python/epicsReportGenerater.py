@@ -63,77 +63,46 @@ def extract_selected_programs(description):
     return ", ".join(checked_items) if checked_items else "None"
 
 
-def extract_short_description_points(description):
+def extract_description_points(description):
     ''' this is to regex out all things in the descriptions that does not have check boxes associated'''
     if not description:
         return {}
 
 
-    extracted_short_data = {}
+    extracted_data = {}
 
 
     patterns = {
         "Submission Date": r"## 2\. Submission Date.*?Insert date here:\s*`([\d]{2}-[\d]{2}-[\d]{4})`",
         "Business Owner": r"## 3\. Business Owner.*?<!--.*?-->\s*\n_([\w\s()@-]+)_",
-        "Target Timeline": r"## 13\. Target Timeline.*?Insert date here:\s*`([\w]+\s+\d{1,2},\s*\d{4})`"
-    }
-   
-    for key, pattern in patterns.items():
-        match = re.search(pattern, description, re.DOTALL)
-        extracted_short_data[key] = match.group(1).strip() if match else "N/A"
-
-    extracted_short_data["Selected Programs"] = extract_selected_programs(description)
-   
-    return extracted_short_data
-
-
-def extract_long_description_points(description):
-    ''' this is to regex out all things in the descriptions that does not have check boxes associated'''
-    if not description:
-        return {}
-
-
-    extracted_long_data = {}
-
-
-    patterns = {
+        "Target Timeline": r"## 13\. Target Timeline.*?Insert date here:\s*`([\w]+\s+\d{1,2},\s*\d{4})`",
         "Detail Description": r"## 4\. Detailed Description\s*?<!--.*?-->\s*\n([\s\S]*?)(?=\n## |\Z)",
         "Justification": r"## 5\. Justification\s*<!--.*?-->\s*\n([\s\S]*?)(?=\n## |\Z)"
     }
    
     for key, pattern in patterns.items():
         match = re.search(pattern, description, re.DOTALL)
-        extracted_long_data[key] = match.group(1).strip() if match else "N/A"
+        extracted_data[key] = match.group(1).strip() if match else "N/A"
+
+    extracted_data["Selected Programs"] = extract_selected_programs(description)
    
-    return extracted_long_data
+    return extracted_data
 
 
 def generate_audit_report(gl, group_id, epic_id, output_file):
     """Generates an audit report and saves it to a CSV file."""
     epic = get_epic_details(gl, group_id, epic_id)
-    extracted_short_fields = extract_short_description_points(epic.description)
-    extracted_long_fields = extract_long_description_points(epic.description)
+    extracted_fields = extract_description_points(epic.description)
     label_data = extract_labels(epic)
 
 
 
 
     with open(output_file, mode="w", newline="", encoding="utf-8") as csv_file:
-        shortfieldnames = ["Epic Title", "Creation Date", "Created By", "Last Updated", "Type", "Priority", "Status"] + list (extracted_short_fields.keys())
-        writer = csv.DictWriter(csv_file, fieldnames=shortfieldnames)
+        fieldnames = ["Epic Title", "Creation Date", "Created By", "Last Updated", "Type", "Priority", "Status"] + list (extracted_fields.keys())
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()
-        writer.writerow({"Epic Title": epic.title, "Creation Date": epic.created_at, "Created By": epic.author["name"], "Last Updated": epic.updated_at, "Type": label_data["Type"], "Priority": label_data["Priority"], "Status": label_data["Status"], **extracted_short_fields})
-
-    with open(output_file, mode="a", newline="", encoding="utf-8") as csv_file:
-        csv_file.write("\n------\n")  # Add separator before long fields   
-
-    with open(output_file, mode="a", newline="", encoding="utf-8") as csv_file:
-        longfieldnames = [] + list(extracted_long_fields.keys())
-        writer = csv.DictWriter(csv_file, fieldnames=longfieldnames)
-        writer.writeheader()
-        writer.writerow({**extracted_long_fields})
-
-
+        writer.writerow({"Epic Title": epic.title, "Creation Date": epic.created_at, "Created By": epic.author["name"], "Last Updated": epic.updated_at, "Type": label_data["Type"], "Priority": label_data["Priority"], "Status": label_data["Status"], **extracted_fields})
 
 def main():
 
