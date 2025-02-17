@@ -118,7 +118,7 @@ def extract_all_headers(description):
     ]
 
     # Find all headers in the description
-    pattern = r"(##\s+([\w\s()]+))\n([\s\S]*?)(?=\n## |\Z)"
+    pattern = r"##\s*\d+\.\s*([^\n]+)\n([\s\S]*?)(?=\n## |\Z)"
     matches = re.findall(pattern, description, re.MULTILINE)
 
     for full_match, header, content in matches:
@@ -130,8 +130,6 @@ def extract_all_headers(description):
         extracted_data[clean_header] = content.strip() if content.strip() else "N/A"
 
     return extracted_data
-
-
 
 
 
