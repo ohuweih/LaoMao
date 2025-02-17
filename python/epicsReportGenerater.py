@@ -51,7 +51,7 @@ def extract_selected_programs(description):
     checked_items = re.findall(r"- \[x\] ([\w\s]+)", program_section)  # Match checked items
     return ", ".join(checked_items) if checked_items else "None"
 
-def extract_description_points(description):
+def extract_short_description_points(description):
     ''' this is to regex out all things in the descriptions that does not have check boxes associated'''
     if not description:
         return {}
@@ -61,7 +61,9 @@ def extract_description_points(description):
     patterns = {
         "Detail Description": r"## 4\. Detailed Description\s*?<!--.*?-->\s*\n([\s\S]*?)(?=\n## |\Z)",
         "Submission Date": r"## 2\. Submission Date.*?Insert date here:\s*`([\d]{2}-[\d]{2}-[\d]{4})`",
-        "Business Owner": r"## 3\. Business Owner.*?<!--.*?-->\s*\n_([\w\s()@-]+)_"
+        "Business Owner": r"## 3\. Business Owner.*?<!--.*?-->\s*\n_([\w\s()@-]+)_",
+        "Justification": r"## 5\. Justification\s*<!--.*?-->\s*\n([\s\S]*?)(?=\n## |\Z)",
+        "Target Timeline": r"## 13\. Target Timeline.*?Insert date here:\s*`([\w]+\s+\d{1,2},\s*\d{4})`"
     }
     
     for key, pattern in patterns.items():
@@ -71,25 +73,46 @@ def extract_description_points(description):
 
     extracted_data["Selected Programs"] = extract_selected_programs(description)
    
-    return extracted_data
+    return extracted_short_data
 
+def extract_long_description_points(description):
+    ''' this is to regex out all things in the descriptions that does not have check boxes associated'''
+    if not description:
+        return {}
+
+    extracted_long_data = {}
+
+    patterns = {
+        "Detail Description": r"## 4\. Detailed Description\s*?<!--.*?-->\s*\n([\s\S]*?)(?=\n## |\Z)",
+        "Justification": r"## 5\. Justification\s*<!--.*?-->\s*\n([\s\S]*?)(?=\n## |\Z)"
+    }
+    
+    for key, pattern in patterns.items():
+        match = re.search(pattern, description, re.DOTALL)
+        extracted_data[key] = match.group(1).strip() if match else "N/A"
+
+
+    extracted_data["Selected Programs"] = extract_selected_programs(description)
+   
+    return extracted_long_data
 
 def generate_audit_report(gl, group_id, epic_id, output_file):
     """Generates an audit report and saves it to a CSV file."""
     epic = get_epic_details(gl, group_id, epic_id)
-    extracted_fields = extract_description_points(epic.description)
+    extracted_short_fields = extract_short_description_points(epic.description)
+    extracted_long_fields = extract_long_description_points(epic.description)
     label_data = extract_labels(epic) 
 
 
     with open(output_file, mode="w", newline="", encoding="utf-8") as csv_file:
-        fieldnames = ["Epic Title", "Creation Date", "Last Updated", "Type", "Priority", "Status"] + list (extracted_fields.keys())
+        fieldnames = ["Epic Title", "Creation Date", "Created By", "Last Updated", "Type", "Priority", "Status"] + list (extracted_short_fields.keys()) + list(extract_long_description_points.keys())
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()
 
 
                 # Epic details
-        writer.writerow({"Epic Title": epic.title, "Creation Date": epic.created_at, "Last Updated": epic.updated_at, "Type": label_data["Type"], "Priority": label_data["Priority"], "Status": label_data["Status"], **extracted_fields})
-
+        writer.writerow({"Epic Title": epic.title, "Creation Date": epic.created_at, "Created By": epic.author["name"], "Last Updated": epic.updated_at, "Type": label_data["Type"], "Priority": label_data["Priority"], "Status": label_data["Status"], **extracted_short_fields})
+        writer.writerow({**extracted_long_fields})
 
 def main():
 
