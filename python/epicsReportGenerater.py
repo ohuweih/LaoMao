@@ -55,7 +55,7 @@ def get_latest_note(epic):
 
 def clean_content(content):
     """Format content to look clean"""
-    cleaned_content = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL)  
+    cleaned_content = re.sub(r"<!--[\s\S]*?-->", "", content, flags=re.DOTALL)  
     cleaned_content = re.sub(r"Insert date here:\s*", "", content, flags=re.IGNORECASE)
 
     return cleaned_content.strip()
@@ -77,13 +77,13 @@ def extract_all_headers(description):
     pattern = r"##\s*\d+\.\s*([^\n]+)\n([\s\S]*?)(?=\n## |\Z)"
     matches = re.findall(pattern, description, re.MULTILINE)
 
-    for full_match, header, content in matches:
+    for header, content in matches:
         clean_header = header.strip()
 
         if clean_header in exclude_headers:
             continue  # Skip excluded headers
 
-        extracted_data[clean_header] = content.strip() if content.strip() else "N/A"
+        extracted_data[clean_header] = clean_content(content) if content.strip() else "N/A"
 
     return extracted_data
 
