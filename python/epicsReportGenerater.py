@@ -1,8 +1,6 @@
 import gitlab
 import csv
 import argparse
-
-
 import re
 
 
@@ -32,7 +30,7 @@ def extract_labels(epic):
             important_labels["Priority"] = label.split(":", 1)[1].strip()
         elif "::status::" in label.lower():
             parts = label.partition("::status::")
-            important_labels["Status"] = parts[2].strip() if parts[2] else "N/A"
+            important_labels["Status"] = parts[0].strip() if parts[0] else "N/A"
 
 
     # Convert None values to 'N/A' if they weren't found
@@ -61,6 +59,7 @@ def extract_checkboxes(description, section_title):
     checked_items = re.findall(r"- \[x\] ([\w\s(),]+)", section_content)  # Match checked items
 
     return ", ".join(checked_items) if checked_items else "None"
+
 
 def extract_description_points(description):
     ''' this is to regex out all things in the descriptions that does not have check boxes associated'''
@@ -98,20 +97,24 @@ def extract_description_points(description):
     return extracted_data
 
 
+def get_latest_note(epic):
+    """Get the latest note on the epic"""
+    notes = epic.notes.list(sort="desc", per_page=1)  # Get the most recent note
+    return notes[0].body.strip() if notes else "No notes available"
+
+
 def generate_audit_report(gl, group_id, epic_id, output_file):
     """Generates an audit report and saves it to a CSV file."""
     epic = get_epic_details(gl, group_id, epic_id)
     extracted_fields = extract_description_points(epic.description)
     label_data = extract_labels(epic)
-
-
-
+    latest_note = get_latest_note(epic) 
 
     with open(output_file, mode="w", newline="", encoding="utf-8") as csv_file:
-        fieldnames = ["Epic Title", "Creation Date", "Created By", "Last Updated", "Type", "Priority", "Status"] + list (extracted_fields.keys())
+        fieldnames = ["Epic Title", "Creation Date", "Created By", "Last Updated", "Type", "Priority", "Status", "Latest Note"] + list (extracted_fields.keys())
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()
-        writer.writerow({"Epic Title": epic.title, "Creation Date": epic.created_at, "Created By": epic.author["name"], "Last Updated": epic.updated_at, "Type": label_data["Type"], "Priority": label_data["Priority"], "Status": label_data["Status"], **extracted_fields})
+        writer.writerow({"Epic Title": epic.title, "Creation Date": epic.created_at, "Created By": epic.author["name"], "Last Updated": epic.updated_at, "Type": label_data["Type"], "Priority": label_data["Priority"], "Status": label_data["Status"], **extracted_fields, "Latest Note": latest_note,})
 
 def main():
 
