@@ -113,12 +113,14 @@ def clean_csv_content(file_path):
             return ""  # Handle NaN values
 
         text = text.replace("\u00A0", " ").replace("\r", "").strip()  # Normalize spaces & line endings
-
-        # Remove all HTML comments
         text = re.sub(r"<!--[\s\S]*?-->", "", text, flags=re.DOTALL)
-
-        # Remove 'Insert date here:' (case-insensitive)
         text = re.sub(r"(?i)Insert\s*date\s*here:\s*", "", text)
+        checkboxes = re.findall(r"- \[x\] (.+)", text)  # Extract only checked items
+
+        if checkboxes:
+            text = ", ".join(checkboxes)  # Keep checked items as a comma-separated string
+        else:
+            text = "N/A"  # If no items are checked, replace with N/A
 
         return text.strip()
 
