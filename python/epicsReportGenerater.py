@@ -31,7 +31,7 @@ def extract_labels(epic):
         elif label.lower().startswith("priority:"):
             important_labels["Priority"] = label.split(":", 1)[1].strip()
         elif "::status::" in label.lower():
-            important_labels["Status"] = label.strip()
+            important_labels["Status"] = label.split("::status::", 1)[1].strip()
 
 
     # Convert None values to 'N/A' if they weren't found
