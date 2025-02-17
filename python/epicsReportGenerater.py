@@ -16,7 +16,7 @@ def extract_labels(epic):
     all_labels = epic.labels if epic.labels else []
 
     # Important labels to prioritize
-    important_labels = {"Type": None, "Priority": None}
+    important_labels = {"Type": None, "Priority": None, "Status": None}
 
     # Identify and categorize important labels
     for label in all_labels:
@@ -24,6 +24,8 @@ def extract_labels(epic):
             important_labels["Type"] = label.split(":", 1)[1].strip()
         elif label.lower().startswith("priority:"):
             important_labels["Priority"] = label.split(":", 1)[1].strip()
+        elif "::Status::" in label.lower():
+            important_labels["Status"] = label.strip()
 
     # Convert None values to 'N/A' if they weren't found
     for key in important_labels:
@@ -34,6 +36,7 @@ def extract_labels(epic):
         "All Labels": ", ".join(all_labels) if all_labels else "None",
         "Type": important_labels["Type"],
         "Priority": important_labels["Priority"],
+        "Status": important_labels["Status"],
     }
 
 def extract_selected_programs(description):
@@ -58,7 +61,7 @@ def extract_description_points(description):
     patterns = {
         "Detail Description": r"## 4\. Detailed Description\s*?<!--.*?-->\s*\n([\s\S]*?)(?=\n## |\Z)",
         "Submission Date": r"## 2\. Submission Date.*?Insert date here:\s*`([\d]{2}-[\d]{2}-[\d]{4})`",
-        "Business Owner": r"## 3\. Business Owner.*?<!--.*?-->\s*\n_([\w\s()@-]+)_",
+        "Business Owner": r"## 3\. Business Owner.*?<!--.*?-->\s*\n_([\w\s()@-]+)_"
     }
     
     for key, pattern in patterns.items():
@@ -79,13 +82,13 @@ def generate_audit_report(gl, group_id, epic_id, output_file):
 
 
     with open(output_file, mode="w", newline="", encoding="utf-8") as csv_file:
-        fieldnames = ["Epic Title", "Creation Date", "Last Updated", "Type", "Priority"] + list (extracted_fields.keys())
+        fieldnames = ["Epic Title", "Creation Date", "Last Updated", "Type", "Priority", "Status"] + list (extracted_fields.keys())
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()
 
 
                 # Epic details
-        writer.writerow({"Epic Title": epic.title, "Creation Date": epic.created_at, "Last Updated": epic.updated_at, "Type": label_data["Type"], "Priority": label_data["Priority"], **extracted_fields})
+        writer.writerow({"Epic Title": epic.title, "Creation Date": epic.created_at, "Last Updated": epic.updated_at, "Type": label_data["Type"], "Priority": label_data["Priority"], "Status": label_data["Status"], **extracted_fields})
 
 
 def main():
