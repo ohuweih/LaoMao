@@ -62,6 +62,18 @@ def extract_selected_programs(description):
     checked_items = re.findall(r"- \[x\] ([\w\s]+)", program_section)  # Match checked items
     return ", ".join(checked_items) if checked_items else "None"
 
+def extract_checkboxes(description, section_title):
+    """Extracts checked items from a specific checkbox section."""
+    pattern = fr"## {section_title}.*?<!--.*?-->\s*\n([\s\S]*?)(?=\n## |\Z)"
+    match = re.search(pattern, description, re.DOTALL)
+
+    if not match:
+        return "N/A"
+
+    section_content = match.group(1)
+    checked_items = re.findall(r"- \[x\] ([\w\s(),]+)", section_content)  # Match checked items
+
+    return ", ".join(checked_items) if checked_items else "None"
 
 def extract_description_points(description):
     ''' this is to regex out all things in the descriptions that does not have check boxes associated'''
@@ -84,8 +96,10 @@ def extract_description_points(description):
         match = re.search(pattern, description, re.DOTALL)
         extracted_data[key] = match.group(1).strip() if match else "N/A"
 
-    extracted_data["Selected Programs"] = extract_selected_programs(description)
-   
+    extracted_data["Selected Programs"] = extract_checkboxes(description, "8. Program \\(Required\\)")
+    extracted_data["Expedited"] = extract_checkboxes(description, "6. Expedited")
+    extracted_data["Area"] = extract_checkboxes(description, "7. Area \\(Required\\)")
+
     return extracted_data
 
 
