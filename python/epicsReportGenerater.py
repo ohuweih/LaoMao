@@ -48,20 +48,6 @@ def extract_labels(epic):
     }
 
 
-def extract_selected_programs(description):
-    ''' this is to regex out all things in the description that has check boxes associated'''
-    pattern = r"## 8\. Program \(Required\).*?<!--.*?-->\s*\n([\s\S]*?)(?=\n## |\Z)"  # Capture the list until the next header
-    match = re.search(pattern, description, re.DOTALL)
-
-
-    if not match:
-        return "N/A"
-
-
-    program_section = match.group(1)
-    checked_items = re.findall(r"- \[x\] ([\w\s]+)", program_section)  # Match checked items
-    return ", ".join(checked_items) if checked_items else "None"
-
 def extract_checkboxes(description, section_title):
     """Extracts checked items from a specific checkbox section."""
     pattern = fr"## {section_title}.*?<!--.*?-->\s*\n([\s\S]*?)(?=\n## |\Z)"
@@ -99,6 +85,14 @@ def extract_description_points(description):
     extracted_data["Selected Programs"] = extract_checkboxes(description, "8. Program \\(Required\\)")
     extracted_data["Expedited"] = extract_checkboxes(description, "6. Expedited")
     extracted_data["Area"] = extract_checkboxes(description, "7. Area \\(Required\\)")
+    extracted_data["Reason"] = extract_checkboxes(description, "9. Reason \\(Optional\\)")
+    extracted_data["SOW"] = extract_checkboxes(description, "10. SOW \\(Optional\\)")
+    extracted_data["Business Requirements"] = extract_checkboxes(description, "14. Business Requirements")
+    extracted_data["Gate 1 Approvers"] = extract_checkboxes(description, "16. Gate 1 Approvers")
+    extracted_data["BRD Approvers"] = extract_checkboxes(description, "19. BRD Approvers")
+    extracted_data["Gate 2 Approvers"] = extract_checkboxes(description, "20. Gate 2 Approvers")
+    extracted_data["Gate 3 Approvers"] = extract_checkboxes(description, "21. Gate 3 Approvers")
+    extracted_data["Proceed to production Approvers"] = extract_checkboxes(description, "22. Proceed to production Approvers.")
 
     return extracted_data
 
