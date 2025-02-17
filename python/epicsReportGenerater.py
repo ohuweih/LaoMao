@@ -103,10 +103,43 @@ def get_latest_note(epic):
     return notes[0].body.strip() if notes else "No notes available"
 
 
+
+
+def extract_all_headers(description):
+    """Extracts all sections dynamically and filters out unwanted ones."""
+    if not description:
+        return {}
+
+    extracted_data = {}
+
+    # List of headers we want to ignore
+    exclude_headers = [
+        "Change History", "References", "Attachments"
+    ]
+
+    # Find all headers in the description
+    pattern = r"(##\s+([\w\s()]+))\n([\s\S]*?)(?=\n## |\Z)"
+    matches = re.findall(pattern, description, re.MULTILINE)
+
+    for full_match, header, content in matches:
+        clean_header = header.strip()
+
+        if clean_header in exclude_headers:
+            continue  # Skip excluded headers
+
+        extracted_data[clean_header] = content.strip() if content.strip() else "N/A"
+
+    return extracted_data
+
+
+
+
+
+
 def generate_audit_report(gl, group_id, epic_id, output_file):
     """Generates an audit report and saves it to a CSV file."""
     epic = get_epic_details(gl, group_id, epic_id)
-    extracted_fields = extract_description_points(epic.description)
+    extracted_fields = extract_all_headers(epic.description)
     label_data = extract_labels(epic)
     latest_note = get_latest_note(epic) 
 
