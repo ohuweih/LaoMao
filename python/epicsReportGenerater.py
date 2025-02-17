@@ -47,62 +47,18 @@ def extract_labels(epic):
     }
 
 
-def extract_checkboxes(description, section_title):
-    """Extracts checked items from a specific checkbox section."""
-    pattern = fr"## {section_title}.*?<!--.*?-->\s*\n([\s\S]*?)(?=\n## |\Z)"
-    match = re.search(pattern, description, re.DOTALL)
-
-    if not match:
-        return "N/A"
-
-    section_content = match.group(1)
-    checked_items = re.findall(r"- \[x\] ([\w\s(),]+)", section_content)  # Match checked items
-
-    return ", ".join(checked_items) if checked_items else "None"
-
-
-def extract_description_points(description):
-    ''' this is to regex out all things in the descriptions that does not have check boxes associated'''
-    if not description:
-        return {}
-
-
-    extracted_data = {}
-
-
-    patterns = {
-        "Submission Date": r"## 2\. Submission Date.*?Insert date here:\s*`?\s*([\d]{2}-[\d]{2}-[\d]{4})\s*`?",
-        "Business Owner": r"## 3\. Business Owner.*?<!--.*?-->\s*\n_([\w\s()@-]+)_",
-        "Target Timeline": r"## 13\. Target Timeline.*?Insert date here:\s*`?\s*([\w]+\s+\d{1,2},\s*\d{4})\s*`?",
-        "Detail Description": r"## 4\. Detailed Description\s*?<!--.*?-->\s*\n([\s\S]*?)(?=\n## |\Z)",
-        "Justification": r"## 5\. Justification\s*<!--.*?-->\s*\n([\s\S]*?)(?=\n## |\Z)"
-    }
-   
-    for key, pattern in patterns.items():
-        match = re.search(pattern, description, re.MULTILINE | re.DOTALL)
-        extracted_data[key] = match.group(1).strip() if match else "N/A"
-
-    extracted_data["Selected Programs"] = extract_checkboxes(description, "8. Program \\(Required\\)")
-    extracted_data["Expedited"] = extract_checkboxes(description, "6. Expedited")
-    extracted_data["Area"] = extract_checkboxes(description, "7. Area \\(Required\\)")
-    extracted_data["Reason"] = extract_checkboxes(description, "9. Reason \\(Optional\\)")
-    extracted_data["SOW"] = extract_checkboxes(description, "10. SOW \\(Optional\\)")
-    extracted_data["Business Requirements"] = extract_checkboxes(description, "14. Business Requirements")
-    extracted_data["Gate 1 Approvers"] = extract_checkboxes(description, "16. Gate 1 Approvers")
-    extracted_data["BRD Approvers"] = extract_checkboxes(description, "19. BRD Approvers")
-    extracted_data["Gate 2 Approvers"] = extract_checkboxes(description, "20. Gate 2 Approvers")
-    extracted_data["Gate 3 Approvers"] = extract_checkboxes(description, "21. Gate 3 Approvers")
-    extracted_data["Proceed to production Approvers"] = extract_checkboxes(description, "22. Proceed to production Approvers.")
-
-    return extracted_data
-
-
 def get_latest_note(epic):
     """Get the latest note on the epic"""
     notes = epic.notes.list(sort="desc", per_page=1)  # Get the most recent note
     return notes[0].body.strip() if notes else "No notes available"
 
 
+def clean_content(content):
+    """Format content to look clean"""
+    cleaned_content = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL)  
+    cleaned_content = re.sub(r"Insert date here:\s*", "", content, flags=re.IGNORECASE)
+
+    return cleaned_content.strip()
 
 
 def extract_all_headers(description):
@@ -132,8 +88,6 @@ def extract_all_headers(description):
     return extracted_data
 
 
-
-
 def generate_audit_report(gl, group_id, epic_id, output_file):
     """Generates an audit report and saves it to a CSV file."""
     epic = get_epic_details(gl, group_id, epic_id)
@@ -147,9 +101,8 @@ def generate_audit_report(gl, group_id, epic_id, output_file):
         writer.writeheader()
         writer.writerow({"Epic Title": epic.title, "Creation Date": epic.created_at, "Created By": epic.author["name"], "Last Updated": epic.updated_at, "Type": label_data["Type"], "Priority": label_data["Priority"], "Status": label_data["Status"], **extracted_fields, "Latest Note": latest_note,})
 
+
 def main():
-
-
     """Main function to run the GitLab audit script."""
     parser = argparse.ArgumentParser(description="Generate an audit report for a GitLab epic")
     parser.add_argument("-t", "--token", required=True, help="GitLab private token for authentication")
