@@ -30,7 +30,7 @@ def extract_labels(epic):
             important_labels["Type"] = label.split(":", 1)[1].strip()
         elif label.lower().startswith("priority:"):
             important_labels["Priority"] = label.split(":", 1)[1].strip()
-        elif "::Status::" in label.lower():
+        elif "::status::" in label.lower():
             important_labels["Status"] = label.strip()
 
 
@@ -71,9 +71,9 @@ def extract_description_points(description):
 
 
     patterns = {
-        "Submission Date": r"## 2\. Submission Date.*?Insert date here:\s*`([\d]{2}-[\d]{2}-[\d]{4})`",
+        "Submission Date": r"## 2\. Submission Date\s*.*?Insert date here:\s*`?\s*([\d]{2}-[\d]{2}-[\d]{4})\s*`?",
         "Business Owner": r"## 3\. Business Owner.*?<!--.*?-->\s*\n_([\w\s()@-]+)_",
-        "Target Timeline": r"## 13\. Target Timeline.*?Insert date here:\s*`([\w]+\s+\d{1,2},\s*\d{4})`",
+        "Target Timeline": r"## 13\. Target Timeline.*?Insert date here:\s*`?\s*([\w]+\s+\d{1,2},\s*\d{4})\s*`?",
         "Detail Description": r"## 4\. Detailed Description\s*?<!--.*?-->\s*\n([\s\S]*?)(?=\n## |\Z)",
         "Justification": r"## 5\. Justification\s*<!--.*?-->\s*\n([\s\S]*?)(?=\n## |\Z)"
     }
