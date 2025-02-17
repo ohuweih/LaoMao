@@ -2,6 +2,7 @@ import gitlab
 import csv
 import argparse
 import re
+import pandas as pd
 
 
 
@@ -102,6 +103,32 @@ def generate_audit_report(gl, group_id, epic_id, output_file):
         writer.writerow({"Epic Title": epic.title, "Creation Date": epic.created_at, "Created By": epic.author["name"], "Last Updated": epic.updated_at, "Type": label_data["Type"], "Priority": label_data["Priority"], "Status": label_data["Status"], **extracted_fields, "Latest Note": latest_note,})
 
 
+def clean_csv_content(file_path):
+    """Loads CSV, cleans all fields, and rewrites it."""
+    df = pd.read_csv(file_path, dtype=str)  # Load CSV as a DataFrame (all text)
+
+    def clean_text(text):
+        """Applies regex to remove comments and 'Insert date here:' from text fields."""
+        if pd.isna(text):
+            return ""  # Handle NaN values
+
+        text = text.replace("\u00A0", " ").replace("\r", "").strip()  # Normalize spaces & line endings
+
+        # Remove all HTML comments
+        text = re.sub(r"<!--[\s\S]*?-->", "", text, flags=re.DOTALL)
+
+        # Remove 'Insert date here:' (case-insensitive)
+        text = re.sub(r"(?i)Insert\s*date\s*here:\s*", "", text)
+
+        return text.strip()
+
+    # Apply cleaning to every text field in the DataFrame
+    df = df.applymap(clean_text)
+
+    # Save cleaned CSV
+    df.to_csv(file_path, index=False, encoding="utf-8")
+    print(f"Cleaned report saved as {file_path}")
+
 def main():
     """Main function to run the GitLab audit script."""
     parser = argparse.ArgumentParser(description="Generate an audit report for a GitLab epic")
@@ -120,6 +147,7 @@ def main():
     # Generate report
     generate_audit_report(gl, args.group, args.epic, args.output)
 
+    clean_csv_content(args.output)
 
 if __name__ == "__main__":
     main()
