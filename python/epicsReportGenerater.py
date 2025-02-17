@@ -123,8 +123,11 @@ def generate_audit_report(gl, group_id, epic_id, output_file):
         writer = csv.DictWriter(csv_file, fieldnames=shortfieldnames)
         writer.writeheader()
         writer.writerow({"Epic Title": epic.title, "Creation Date": epic.created_at, "Created By": epic.author["name"], "Last Updated": epic.updated_at, "Type": label_data["Type"], "Priority": label_data["Priority"], "Status": label_data["Status"], **extracted_short_fields})
-       
-    with open(output_file, mode="w", newline="", encoding="utf-8") as csv_file:
+
+    with open(output_file, mode="a", newline="", encoding="utf-8") as csv_file:
+        csv_file.write("\n------\n")  # Add separator before long fields   
+
+    with open(output_file, mode="a", newline="", encoding="utf-8") as csv_file:
         longfieldnames = [] + list(extracted_long_fields.keys())
         writer = csv.DictWriter(csv_file, fieldnames=longfieldnames)
         writer.writeheader()
