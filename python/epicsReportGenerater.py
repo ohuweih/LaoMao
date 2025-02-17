@@ -71,7 +71,7 @@ def extract_description_points(description):
 
 
     patterns = {
-        "Submission Date": r"## 2\. Submission Date\s*.*?Insert date here:\s*`?\s*([\d]{2}-[\d]{2}-[\d]{4})\s*`?",
+        "Submission Date": r"## 2\. Submission Date.*?Insert date here:\s*`?\s*([\d]{2}-[\d]{2}-[\d]{4})\s*`?",
         "Business Owner": r"## 3\. Business Owner.*?<!--.*?-->\s*\n_([\w\s()@-]+)_",
         "Target Timeline": r"## 13\. Target Timeline.*?Insert date here:\s*`?\s*([\w]+\s+\d{1,2},\s*\d{4})\s*`?",
         "Detail Description": r"## 4\. Detailed Description\s*?<!--.*?-->\s*\n([\s\S]*?)(?=\n## |\Z)",
@@ -79,7 +79,7 @@ def extract_description_points(description):
     }
    
     for key, pattern in patterns.items():
-        match = re.search(pattern, description, re.DOTALL)
+        match = re.search(pattern, description, re.MULTILINE | re.DOTALL)
         extracted_data[key] = match.group(1).strip() if match else "N/A"
 
     extracted_data["Selected Programs"] = extract_checkboxes(description, "8. Program \\(Required\\)")
