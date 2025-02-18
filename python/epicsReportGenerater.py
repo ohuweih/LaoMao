@@ -47,22 +47,6 @@ def get_latest_note(epic):
     return notes[0].body.strip() if notes else "No notes available"
 
 
-def clean_content(content):
-    """Format content to look clean"""
-    cleaned_content = content.replace("\u00A0", " ").replace("\r", "").strip()  # Normalize spaces & line endings
-    cleaned_content = re.sub(r"<!--[\s\S]*?-->", "", content, flags=re.DOTALL)  
-    cleaned_content = re.sub(r"Insert date here:\s*", "", content, flags=re.IGNORECASE)
-    cleaned_content = re.sub(r"(?i)Insert\s*date\s*here:\s*", "", content)
-    checkedCheckboxes = re.findall(r"- \[x\] (.+)", content)  # Extract only checked items
-    cleaned_content = re.sub(r"- \[\s?\] .*", "", content, flags=re.IGNORECASE)
-    cleaned_content = re.sub(r"``","",content)
-    if checkedCheckboxes:
-        cleaned_content = ", ".join(checkedCheckboxes)  # Keep checked items as a comma-separated string
-    else:
-        cleaned_content = cleaned_content.strip()
-    return cleaned_content.strip()
-
-
 def extract_all_headers(description):
     """Extracts all sections dynamically and filters out unwanted ones."""
     if not description:
@@ -86,7 +70,7 @@ def extract_all_headers(description):
             continue  # Skip excluded headers
 
         extracted_data[clean_header] = content if content.strip() else "N/A"
-        
+
     return extracted_data
 
 
@@ -123,6 +107,8 @@ def clean_csv_content(file_path):
         text = re.sub(r"_([\w\s()]+)_", r"\1", text)
         text = re.sub(r"`(\d{2}-\d{2}-\d{4})`", r"\1", text)
         text = re.sub(r" \\", "", text)
+        text = re.sub(r"Enter Text here","",text, flags=re.IGNORECASE)
+        text = re.sub(r"`([\w\s,]+)`", r"\1", text)
     #    text = re.sub(r"``","",text)
         if checkedCheckboxes:
           text = ", ".join(checkedCheckboxes)  # Keep checked items as a comma-separated string
