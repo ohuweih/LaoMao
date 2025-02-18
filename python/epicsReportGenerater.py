@@ -3,13 +3,36 @@ import csv
 import argparse
 import re
 import pandas as pd
+import yaml
+from datetime import datetime
+
+def load_config():
+    with open('config/report.yaml', "r", encoding="utf-8") as file:
+        config = yaml.safe_load(file)
+        return config
 
 
-def get_epic_details(gl, group_id, epic_id):
+def get_epic_details(gl, group_id):
     ''' Get the epic '''
+    config = load_config()
+    label_filters = set(config["labels"])
+
+    from_date = datetime.strptime(config["fromDate"], "%m-%d-%Y")
+    to_date = datetime.strptime(config["toDate"], "%m-%d-%Y")
+
     group = gl.groups.get(group_id)
-    epic = group.epics.get(epic_id)
-    return epic
+    epics = group.epics.list(all=True)
+
+    filtered_epics = []
+    for epic in epics:
+        epic_created_at = datetime.strptime(epic.created_at, "%Y-%m-%dT%H:%M:%S.%fZ")
+
+        if from_date <= epic_created_at <= to_date and any(
+            label in epic_label for epic_label in epic.labels for label in label_filters
+            ):
+            filtered_epics.append(epic)
+
+    return filtered_epics
 
 
 def extract_labels(epic):
@@ -74,20 +97,33 @@ def extract_all_headers(description):
     return extracted_data
 
 
-def generate_audit_report(gl, group_id, epic_id, output_file):
+def generate_audit_report(gl, group_id, output_file):
     """Generates an audit report and saves it to a CSV file."""
-    epic = get_epic_details(gl, group_id, epic_id)
-    extracted_fields = extract_all_headers(epic.description)
-    label_data = extract_labels(epic)
-    latest_note = get_latest_note(epic)
+    epics = get_epic_details(gl, group_id)
 
+    if not epics:
+        print("No epics found")
+        return
+
+    extracted_fields = {}
+    all_headers = set()
+    for epic in epics:
+        extracted_fields = extract_all_headers(epic.description)
+        all_headers.update(extracted_fields.keys())
+    
+    fieldnames = ["Epic ID", "Epic Title", "Creation Date", "Created By", "Last Updated", "Type", "Priority", "Status", "Latest Note"] + sorted(all_headers)
 
     with open(output_file, mode="w", newline="", encoding="utf-8") as csv_file:
-        fieldnames = ["Epic Title", "Creation Date", "Created By", "Last Updated", "Type", "Priority", "Status", "Latest Note"] + list (extracted_fields.keys())
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()
-        writer.writerow({"Epic Title": epic.title, "Creation Date": epic.created_at, "Created By": epic.author["name"], "Last Updated": epic.updated_at, "Type": label_data["Type"], "Priority": label_data["Priority"], "Status": label_data["Status"], **extracted_fields, "Latest Note": latest_note,})
 
+        for epic in epics:
+            extracted_fields = extract_all_headers(epic.description)
+            label_data = extract_labels(epic)
+            latest_note = get_latest_note(epic)
+            writer.writerow({"Epic Title": epic.title, "Creation Date": epic.created_at, "Created By": epic.author["name"], "Last Updated": epic.updated_at, "Type": label_data["Type"], "Priority": label_data["Priority"], "Status": label_data["Status"], **extracted_fields, "Latest Note": latest_note,})
+
+    print(f"Report saved as {output_file}")
 
 def clean_csv_content(file_path):
     """Loads CSV, cleans all fields, and rewrites it."""
@@ -109,7 +145,6 @@ def clean_csv_content(file_path):
         text = re.sub(r" \\", "", text)
         text = re.sub(r"Enter Text here","",text, flags=re.IGNORECASE)
         text = re.sub(r"`([\w\s,]+)`", r"\1", text)
-    #    text = re.sub(r"``","",text)
         if checkedCheckboxes:
           text = ", ".join(checkedCheckboxes)  # Keep checked items as a comma-separated string
         else:
@@ -129,26 +164,16 @@ def main():
     parser = argparse.ArgumentParser(description="Generate an audit report for a GitLab epic")
     parser.add_argument("-t", "--token", required=True, help="GitLab private token for authentication")
     parser.add_argument("-g", "--group", required=True, help="GitLab group ID containing the epic")
-    parser.add_argument("-e", "--epic", required=True, help="Epic ID to generate the report for")
     parser.add_argument("-o", "--output", default="gitlab_epic_report.csv", help="Output CSV file name")
 
-
-
-
     args = parser.parse_args()
-   
-    # Authenticate GitLab
+       # Authenticate GitLab
     gl = gitlab.Gitlab("https://gitlab.com", private_token=args.token)
 
-
-
-
     # Generate report
-    generate_audit_report(gl, args.group, args.epic, args.output)
-
+    generate_audit_report(gl, args.group, args.output)
 
     clean_csv_content(args.output)
-
 
 if __name__ == "__main__":
     main()
