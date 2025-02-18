@@ -5,8 +5,6 @@ import re
 import pandas as pd
 
 
-
-
 def get_epic_details(gl, group_id, epic_id):
     ''' Get the epic '''
     group = gl.groups.get(group_id)
@@ -18,27 +16,22 @@ def extract_labels(epic):
     """Extracts all labels from the epic and categorizes important ones."""
     all_labels = epic.labels if epic.labels else []
 
-
     # Important labels to prioritize
     important_labels = {"Type": None, "Priority": None, "Status": None}
-
 
     # Identify and categorize important labels
     for label in all_labels:
         if label.lower().startswith("type:"):
-            important_labels["Type"] = label.split(":", 1)[1].strip()
+            important_labels["Type"] = label.split("::", 1)[1].strip()
         elif label.lower().startswith("priority:"):
-            important_labels["Priority"] = label.split(":", 1)[1].strip()
+            important_labels["Priority"] = label.split("::", 1)[1].strip()
         elif "::status::" in label.lower():
-            parts = label.partition("::status::")
-            important_labels["Status"] = parts[0].strip() if parts[0] else "N/A"
-
+            important_labels["Status"] = label.split("Status::", 1)[1].strip()
 
     # Convert None values to 'N/A' if they weren't found
     for key in important_labels:
         if not important_labels[key]:
             important_labels[key] = "N/A"
-
 
     return {
         "All Labels": ", ".join(all_labels) if all_labels else "None",
@@ -56,9 +49,17 @@ def get_latest_note(epic):
 
 def clean_content(content):
     """Format content to look clean"""
+    cleaned_content = content.replace("\u00A0", " ").replace("\r", "").strip()  # Normalize spaces & line endings
     cleaned_content = re.sub(r"<!--[\s\S]*?-->", "", content, flags=re.DOTALL)  
     cleaned_content = re.sub(r"Insert date here:\s*", "", content, flags=re.IGNORECASE)
-
+    cleaned_content = re.sub(r"(?i)Insert\s*date\s*here:\s*", "", content)
+    checkedCheckboxes = re.findall(r"- \[x\] (.+)", content)  # Extract only checked items
+    cleaned_content = re.sub(r"- \[\s?\] .*", "", content, flags=re.IGNORECASE)
+    cleaned_content = re.sub(r"``","",content)
+    if checkedCheckboxes:
+        cleaned_content = ", ".join(checkedCheckboxes)  # Keep checked items as a comma-separated string
+    else:
+        cleaned_content = cleaned_content.strip()
     return cleaned_content.strip()
 
 
@@ -84,8 +85,8 @@ def extract_all_headers(description):
         if clean_header in exclude_headers:
             continue  # Skip excluded headers
 
-        extracted_data[clean_header] = clean_content(content) if content.strip() else "N/A"
-
+        extracted_data[clean_header] = content if content.strip() else "N/A"
+        
     return extracted_data
 
 
@@ -94,7 +95,8 @@ def generate_audit_report(gl, group_id, epic_id, output_file):
     epic = get_epic_details(gl, group_id, epic_id)
     extracted_fields = extract_all_headers(epic.description)
     label_data = extract_labels(epic)
-    latest_note = get_latest_note(epic) 
+    latest_note = get_latest_note(epic)
+
 
     with open(output_file, mode="w", newline="", encoding="utf-8") as csv_file:
         fieldnames = ["Epic Title", "Creation Date", "Created By", "Last Updated", "Type", "Priority", "Status", "Latest Note"] + list (extracted_fields.keys())
@@ -107,6 +109,7 @@ def clean_csv_content(file_path):
     """Loads CSV, cleans all fields, and rewrites it."""
     df = pd.read_csv(file_path, dtype=str)  # Load CSV as a DataFrame (all text)
 
+
     def clean_text(text):
         """Applies regex to remove comments and 'Insert date here:' from text fields."""
         if pd.isna(text):
@@ -114,14 +117,17 @@ def clean_csv_content(file_path):
 
         text = text.replace("\u00A0", " ").replace("\r", "").strip()  # Normalize spaces & line endings
         text = re.sub(r"<!--[\s\S]*?-->", "", text, flags=re.DOTALL)
-        text = re.sub(r"(?i)Insert\s*date\s*here:\s*", "", text)
-        checkboxes = re.findall(r"- \[x\] (.+)", text)  # Extract only checked items
-
-        if checkboxes:
-            text = ", ".join(checkboxes)  # Keep checked items as a comma-separated string
+        text = re.sub(r"(?i)`Insert\s*date\s*here:`\s*", "", text)
+        checkedCheckboxes = re.findall(r"- \[x\] (.+)", text)  # Extract only checked items
+        text = re.sub(r"- \[\s?\] .*", "", text, flags=re.IGNORECASE)
+        text = re.sub(r"_([\w\s()]+)_", r"\1", text)
+        text = re.sub(r"`(\d{2}-\d{2}-\d{4})`", r"\1", text)
+        text = re.sub(r" \\", "", text)
+    #    text = re.sub(r"``","",text)
+        if checkedCheckboxes:
+          text = ", ".join(checkedCheckboxes)  # Keep checked items as a comma-separated string
         else:
-            text = "N/A"  # If no items are checked, replace with N/A
-
+           text = text.strip()
         return text.strip()
 
     # Apply cleaning to every text field in the DataFrame
@@ -130,6 +136,7 @@ def clean_csv_content(file_path):
     # Save cleaned CSV
     df.to_csv(file_path, index=False, encoding="utf-8")
     print(f"Cleaned report saved as {file_path}")
+
 
 def main():
     """Main function to run the GitLab audit script."""
@@ -140,16 +147,22 @@ def main():
     parser.add_argument("-o", "--output", default="gitlab_epic_report.csv", help="Output CSV file name")
 
 
+
+
     args = parser.parse_args()
    
     # Authenticate GitLab
     gl = gitlab.Gitlab("https://gitlab.com", private_token=args.token)
 
 
+
+
     # Generate report
     generate_audit_report(gl, args.group, args.epic, args.output)
 
+
     clean_csv_content(args.output)
+
 
 if __name__ == "__main__":
     main()
