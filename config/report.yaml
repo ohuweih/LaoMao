@@ -1,5 +1,5 @@
 labels:
-  - Change
-  - Approval
+  - Somelabel
+  - anotherLabel
 fromDate: "01-01-2024"
 toDate: "02-18-2025"

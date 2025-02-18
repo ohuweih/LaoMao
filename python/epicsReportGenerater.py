@@ -12,9 +12,8 @@ def load_config():
         return config
 
 
-def get_epic_details(gl, group_id):
+def get_epic_details(gl, group_id, config):
     ''' Get the epic '''
-    config = load_config()
     label_filters = set(config["labels"])
 
     from_date = datetime.strptime(config["fromDate"], "%m-%d-%Y")
@@ -97,9 +96,9 @@ def extract_all_headers(description):
     return extracted_data
 
 
-def generate_audit_report(gl, group_id, output_file):
+def generate_audit_report(gl, group_id, config, output_file):
     """Generates an audit report and saves it to a CSV file."""
-    epics = get_epic_details(gl, group_id)
+    epics = get_epic_details(gl, group_id, config)
 
     if not epics:
         print("No epics found")
@@ -170,10 +169,12 @@ def main():
        # Authenticate GitLab
     gl = gitlab.Gitlab("https://gitlab.com", private_token=args.token)
 
+    config = load_config()
+    output_file = f"{args.output}_{config['fromDate']}_{config['toDate']}.csv"
     # Generate report
-    generate_audit_report(gl, args.group, args.output)
+    generate_audit_report(gl, args.group, config, output_file)
 
-    clean_csv_content(args.output)
+    clean_csv_content(output_file)
 
 if __name__ == "__main__":
     main()
