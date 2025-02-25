@@ -223,8 +223,6 @@ def clean_csv_content(file_path):
     df = pd.read_csv(file_path, dtype=str)  # Load CSV as a DataFrame (all text)
 
 
-
-
     def clean_text(text):
         """Applies regex to remove comments and 'Insert date here:' from text fields."""
         if pd.isna(text):
