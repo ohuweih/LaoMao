@@ -31,13 +31,14 @@ def get_epic_details(gl, group_id, config):
 
     filtered_epics = []
     for epic in epics:
-        epic_created_at = datetime.strptime(epic.created_at, "%Y-%m-%dT%H:%M:%S.%fZ")
+        if epic.start_date:
+            epic_start_at = datetime.strptime(epic.start_date, "%Y-%m-%d")
 
 
-        if from_date <= epic_created_at <= to_date and any(
-            label in epic_label for epic_label in epic.labels for label in label_filters
-            ):
-            filtered_epics.append(epic)
+            if from_date <= epic_start_at <= to_date and any(
+                label in epic_label for epic_label in epic.labels for label in label_filters
+                ):
+                filtered_epics.append(epic)
 
 
     return filtered_epics
@@ -140,7 +141,7 @@ def generate_audit_report(gl, group_id, config, output_file):
         extracted_fields = extract_all_headers(epic.description)
         all_headers.update(extracted_fields.keys())
    
-    fieldnames = ["Epic ID", "Epic Title", "Creation Date", "Created By", "Last Updated", "Type", "Priority", "Status", "Latest Note", "Prod Date", "Days Past Due", "Stakeholders"] + sorted(all_headers)
+    fieldnames = ["Epic ID", "Epic Title", "Creation Date", "Created By", "Last Updated", "Type", "Priority", "Status", "Latest Note", "Prod Date", "Days Past Due", "Stakeholders","Start Date"] + sorted(all_headers)
 
 
     with open(output_file, mode="w", newline="", encoding="utf-8") as csv_file:
@@ -164,6 +165,7 @@ def generate_audit_report(gl, group_id, config, output_file):
                 "Status": label_data["Status"], 
                 **extracted_fields, 
                 "Latest Note": latest_note, 
+                "Start Date": epic.start_date if epic.start_date else "N/A",
                 "Prod Date": epic.end_date if epic.end_date else "N/A", 
                 "Stakeholders": participants,
                 "Days Past Due": (
