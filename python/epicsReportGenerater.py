@@ -28,9 +28,17 @@ def get_epic_details(gl, group_id, config):
     group = gl.groups.get(group_id)
     epics = group.epics.list(all=True)
 
+    all_epics = []
+    page = 1
+    while True:
+        epics = group.epics.list(per_page=100, page=page)  # Request 100 items per page
+        if not epics:
+            break
+        all_epics.extend(epics)
+        page += 1
 
     filtered_epics = []
-    for epic in epics:
+    for epic in all_epics:
         if epic.start_date:
             epic_start_at = datetime.strptime(epic.start_date, "%Y-%m-%d")
 
@@ -39,7 +47,13 @@ def get_epic_details(gl, group_id, config):
                 label in epic_label for epic_label in epic.labels for label in label_filters
                 ):
                 filtered_epics.append(epic)
+        elif epic.created_at:
+            epic_start_at = datetime.strptime(epic.created_at, "%Y-%m-%dT%H:%M:%S.%fZ")
 
+            if from_date <= epic_start_at <= to_date and any(
+                label in epic_label for epic_label in epic.labels for label in label_filters
+                ):
+                filtered_epics.append(epic)
 
     return filtered_epics
 
@@ -83,10 +97,16 @@ def extract_labels(epic):
 
 def get_latest_note(epic):
     """Get the latest note on the epic"""
-    notes = epic.notes.list(sort="desc", per_page=1)  # Get the most recent note
-    return notes[0].body.strip() if notes else "No notes available"
+    try:
+        notes = epic.notes.list(sort="desc", per_page=20)
 
+        for note in notes:
+            if not note.system:
+                return note.body.strip()
 
+        return "No user comments available"
+    except:
+        return "No user comments available"
 
 
 def extract_all_headers(description):
@@ -123,6 +143,26 @@ def extract_all_headers(description):
     return extracted_data
 
 
+def get_prod_defect(epic):
+    """Retrieve a list of child epics attached to a parent epic."""
+    try:
+        all_children = []
+        page = 1
+        while True:
+            children = epic.children.list(per_page=100, page=page)  # Request 100 child epics per page
+            if not children:
+                break
+            all_children.extend(children)
+            page += 1
+
+        filtered_children = [
+            f"{child.iid}: {child.title}"
+            for child in children
+            if "defect" in child.labels or "IES PROD" in child.labels
+        ]
+        return ", ".join(filtered_children) if filtered_children else "N/A"
+    except:
+        return "N/A"
 
 
 def generate_audit_report(gl, group_id, config, output_file):
@@ -141,7 +181,7 @@ def generate_audit_report(gl, group_id, config, output_file):
         extracted_fields = extract_all_headers(epic.description)
         all_headers.update(extracted_fields.keys())
    
-    fieldnames = ["Epic ID", "Epic Title", "Creation Date", "Created By", "Last Updated", "Type", "Priority", "Status", "Latest Note", "Prod Date", "Days Past Due", "Stakeholders","Start Date"] + sorted(all_headers)
+    fieldnames = ["Epic ID", "Epic Title", "Creation Date", "Created By", "Last Updated", "Type", "Priority", "Status", "Latest Note", "Prod Date", "Days Past Due", "Start Date", "Post PROD Defects"] + sorted(all_headers)
 
 
     with open(output_file, mode="w", newline="", encoding="utf-8") as csv_file:
@@ -150,10 +190,10 @@ def generate_audit_report(gl, group_id, config, output_file):
 
 
         for epic in epics:
-            participants = ", ".join([p["name"] for p in epic.participants()]) if hasattr(epic, "participants") else "N/A"
             extracted_fields = extract_all_headers(epic.description)
             label_data = extract_labels(epic)
             latest_note = get_latest_note(epic)
+            prod_defect = get_prod_defect(epic)
             writer.writerow({
                 "Epic ID": epic.iid, 
                 "Epic Title": epic.title, 
@@ -167,11 +207,11 @@ def generate_audit_report(gl, group_id, config, output_file):
                 "Latest Note": latest_note, 
                 "Start Date": epic.start_date if epic.start_date else "N/A",
                 "Prod Date": epic.end_date if epic.end_date else "N/A", 
-                "Stakeholders": participants,
                 "Days Past Due": (
                     (today - datetime.strptime(epic.end_date, "%Y-%m-%d").date()).days
-        if epic.end_date else "N/A"
-                )
+                    if epic.end_date else "N/A"
+                ),
+                "Post PROD Defects": prod_defect
                 })
 
 
