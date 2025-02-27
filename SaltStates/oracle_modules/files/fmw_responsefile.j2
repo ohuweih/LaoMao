@@ -1,0 +1,44 @@
+[ENGINE]
+#DO NOT CHANGE THIS. 
+Response File Version=1.0.0.0.0
+
+[GENERIC]
+# The directory path of your Oracle Home.
+ORACLE_HOME=/u01/app/oracle/product/12.2.1.4.0/middleware
+
+# The directory path of your Oracle Inventory
+INVENTORY_LOCATION=/shared_weblogic/oracle/oraInventory
+
+# the operating system group for managing the Oracle Inventory
+UNIX_GROUP_NAME=oinstall
+
+# Set this variable value to the Installation Type selected. 
+# For WebLogic Server: wls
+# For Coherence: coherence
+# For Complete with Examples: complete
+INSTALL_TYPE=Fusion Middleware Infrastructure
+
+# Set this to true if you wish to decline the Oracle Configuration Manager configuration
+DECLINE_SECURITY_UPDATES=true
+
+# Set this to true if My Oracle Support Password is specified
+SECURITY_UPDATES_VIA_MYORACLESUPPORT=false
+
+# Provide the Proxy Host
+PROXY_HOST=
+
+# Provide the Proxy Port
+PROXY_PORT=
+
+# Provide the Proxy Username
+PROXY_USER=
+
+# Provide the Proxy Password
+PROXY_PWD=
+
+# Type String (URL format) indicating the location of an update repository.
+# If this is specified, OPatch will attempt to retrieve the specified updates.
+AUTO_UPDATES_LOCATION=
+
+# Set this to true if you wish to enable Classloading Analysis Tool (CLAT)
+ENABLE_CLA=true
