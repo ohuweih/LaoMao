@@ -1,0 +1,101 @@
+secGroups-dev:
+  stage: devSingleStateDeploy
+  when: manual
+  tags: 
+    - LaoMao-mgmt-runner
+  script:
+    - dzdo salt-call grains.setval env dev
+    - dzdo salt-call state.apply unassume_role
+    - dzdo salt-call state.apply assume_role
+    - dzdo salt-call state.apply secgrp
+    - sleep 15
+    - dzdo salt-call state.apply secgrp
+
+targetGroups-dev:
+  stage: devSingleStateDeploy
+  when: manual
+  tags: 
+    - LaoMao-mgmt-runner
+  script:
+    - dzdo salt-call grains.setval env dev
+    - dzdo salt-call state.apply unassume_role
+    - dzdo salt-call state.apply assume_role
+    - dzdo salt-call state.apply target_group
+
+efs-dev:
+  stage: devSingleStateDeploy
+  when: manual
+  tags: 
+    - LaoMao-mgmt-runner
+  script:
+    - dzdo salt-call grains.setval env dev
+    - dzdo salt-call state.apply unassume_role
+    - dzdo salt-call state.apply assume_role
+    - dzdo salt-call state.apply efs
+
+ecr-dev:
+  stage: devSingleStateDeploy
+  when: manual
+  tags: 
+    - LaoMao-mgmt-runner
+  script:
+    - dzdo salt-call grains.setval env dev
+    - dzdo salt-call state.apply unassume_role
+    - dzdo salt-call state.apply assume_role
+    - dzdo salt-call state.apply ecr
+
+loadBalancer-dev:
+  stage: devSingleStateDeploy
+  when: manual
+  tags: 
+    - LaoMao-mgmt-runner
+  script:
+    - dzdo salt-call grains.setval env dev
+    - dzdo salt-call state.apply unassume_role
+    - dzdo salt-call state.apply assume_role
+    - dzdo salt-call state.apply load_balancer
+
+s3-dev:
+  stage: devSingleStateDeploy
+  when: manual
+  tags: 
+    - LaoMao-mgmt-runner
+  script:
+    - dzdo salt-call grains.setval env dev
+    - dzdo salt-call state.apply unassume_role
+    - dzdo salt-call state.apply assume_role
+    - dzdo salt-call state.apply s3
+
+lambda-dev:
+  stage: devSingleStateDeploy
+  when: manual
+  tags: 
+    - LaoMao-mgmt-runner
+  script:
+    - dzdo salt-call grains.setval env dev
+    - dzdo salt-call state.apply unassume_role
+    - dzdo salt-call state.apply assume_role
+    - dzdo salt-call state.apply lambda
+
+ecs-dev:
+  stage: devSingleStateDeploy
+  when: manual
+  tags: 
+    - LaoMao-mgmt-runner
+  script:
+    - dzdo salt-call grains.setval env dev
+    - dzdo salt-call state.apply unassume_role
+    - dzdo salt-call state.apply assume_role
+    - dzdo salt-call state.apply ecs
+
+ec2Weaviate-dev:
+  stage: devSingleStateDeploy
+  when: manual
+  tags: 
+    - LaoMao-mgmt-runner
+  script:
+    - dzdo salt-call grains.setval env dev
+    - dzdo salt-call state.apply unassume_role
+    - dzdo salt-call state.apply assume_role
+    - dzdo salt-call state.apply salt_cloud
+    - dzdo salt-cloud -p weaviate gaies-pe-dev-wvdb-git-lab-pipelines
