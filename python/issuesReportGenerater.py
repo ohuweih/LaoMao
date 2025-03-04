@@ -109,28 +109,6 @@ def extract_all_headers(description):
     return extracted_data
 
 
-def get_related_issues(issue, label_filters):
-    """Retrieve related issues that match specified labels."""
-    try:
-        all_related = []
-        page = 1
-        while True:
-            related_issues = issue.related_issues(per_page=100, page=page)
-            if not related_issues:
-                break
-            all_related.extend(related_issues)
-            page += 1
-
-        filtered_related = [
-            f"{related.iid}: {related.title}"
-            for related in all_related
-            if related.labels and any(label in related.labels for label in label_filters)
-        ]
-
-        return ", ".join(filtered_related) if filtered_related else "N/A"
-    except:
-        return "N/A"
-
 
 def generate_issues_report(gl, project_id, config, output_file):
     """Generates an issue report and saves it to a CSV file."""
@@ -147,7 +125,7 @@ def generate_issues_report(gl, project_id, config, output_file):
         extracted_fields = extract_all_headers(issue.description)
         all_headers.update(extracted_fields.keys())
 
-    fieldnames = ["Issue ID", "Issue Title", "Assignees", "Created Date", "Created By", "Last Updated", "Type", "Priority", "Status", "Release", "Latest Comment", "Due Date", "Days Past Due", "Related Issues"] + sorted(all_headers)
+    fieldnames = ["Issue ID", "Issue Title", "Assignees", "Created Date", "Created By", "Last Updated", "Type", "Priority", "Status", "Release", "Latest Comment", "Due Date", "Days Past Due"] + sorted(all_headers)
 
     with open(output_file, mode="w", newline="", encoding="utf-8") as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
@@ -157,7 +135,6 @@ def generate_issues_report(gl, project_id, config, output_file):
             extracted_fields = extract_all_headers(issue.description)
             label_data = extract_labels(issue)
             latest_comment = get_latest_comment(issue)
-            related_issues = get_related_issues(issue, set(config["labels"]))
             assignees = ", ".join([assignee["name"] for assignee in issue.assignees]) if issue.assignees else "Unassigned"
             
             writer.writerow({
@@ -177,29 +154,45 @@ def generate_issues_report(gl, project_id, config, output_file):
                 "Days Past Due": (
                     (today - datetime.strptime(issue.due_date, "%Y-%m-%d").date()).days
                     if issue.due_date else "N/A"
-                ),
-                "Related Issues": related_issues
+                )
             })
 
     print(f"Report saved as {output_file}")
 
 
 def clean_csv_content(file_path):
-    """Cleans CSV content after writing."""
-    df = pd.read_csv(file_path, dtype=str)
+    """Loads CSV, cleans all fields, and rewrites it."""
+    df = pd.read_csv(file_path, dtype=str)  # Load CSV as a DataFrame (all text)
+
 
     def clean_text(text):
+        """Applies regex to remove comments and 'Insert date here:' from text fields."""
         if pd.isna(text):
-            return ""
-        text = text.replace("\u00A0", " ").replace("\r", "").strip()
+            return ""  # Handle NaN values
+
+
+        text = text.replace("\u00A0", " ").replace("\r", "").strip()  # Normalize spaces & line endings
         text = re.sub(r"<!--[\s\S]*?-->", "", text, flags=re.DOTALL)
         text = re.sub(r"(?i)`Insert\s*date\s*here:`\s*", "", text)
-        text = re.sub(r"`([\w\s,]+)`", r"\1", text)
-        text = re.sub(r"_([\w\s()]+)_", r"\1", text)
+        checkedCheckboxes = re.findall(r"- \[x\] (.+)", text)  # Extract only checked items
         text = re.sub(r"- \[\s?\] .*", "", text, flags=re.IGNORECASE)
+        text = re.sub(r"_([\w\s()]+)_", r"\1", text)
+        text = re.sub(r"`(\d{2}-\d{2}-\d{4})`", r"\1", text)
+        text = re.sub(r" \\", "", text)
+        text = re.sub(r"Enter Text here","",text, flags=re.IGNORECASE)
+        text = re.sub(r"`([\w\s,]+)`", r"\1", text)
+        if checkedCheckboxes:
+          text = ", ".join(checkedCheckboxes)  # Keep checked items as a comma-separated string
+        else:
+           text = text.strip()
         return text.strip()
 
+
+    # Apply cleaning to every text field in the DataFrame
     df = df.applymap(clean_text)
+
+
+    # Save cleaned CSV
     df.to_csv(file_path, index=False, encoding="utf-8")
     print(f"Cleaned report saved as {file_path}")
 
