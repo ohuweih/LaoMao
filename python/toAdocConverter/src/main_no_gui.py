@@ -5,6 +5,7 @@ import formatting
 import imageConverter
 import xlsxConverter
 import pandoc
+import pdfConverter
 
 # Configure logging
 logging.basicConfig(level=logging.INFO,
@@ -95,6 +96,10 @@ def main():
         elif ".xlsx" in input:
             image_output_dir = f"{file_stem}/extracted_images/"
             xlsxConverter.convert_xlsx_to_adoc_with_images(input, f"{file_stem}", image_output_dir)
+        elif ".pdf" in input:
+            text = pdfConverter.load_pdf_as_text(input)
+            pdfConverter.convert_text_to_asciidoc(text, {file_stem}/{file_stem}_no_format.adoc")
+            fix_asciidoc(f"{file_stem}/{file_stem}_no_format.adoc", f"{file_stem}")                                   
         else:
             print("File not supported: Expected a docx or xlsx file")
         print(f"Completed: {input}\n")
