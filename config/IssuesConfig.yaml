@@ -1,5 +1,6 @@
 projects:
   - projectId: 1234567
+    groupid: 1234567
     labelTag: autoTouch
     labels:
       - name: "Change Request::Status::New"

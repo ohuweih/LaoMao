@@ -69,54 +69,73 @@ def subtractBusinessDay(start_date, business_days_to_subtract):
     return current_date
 
 
+def processWorkItem(work_item, config_label, project, labels, updated_at, today):
+    '''
+    Processes a work item (issue or epic) for reminders based on config
+    '''
+    second_reminder_date = config_label['secondReminderDate']
+    past_second_business_date = str(subtractBusinessDay(today, second_reminder_date))
+    first_reminder_date = config_label['firstReminderDate']
+    past_first_business_date = str(subtractBusinessDay(today, first_reminder_date))
+
+    if updated_at <= past_second_business_date:
+        existing_notes = work_item.notes.list()
+        first_comment_exists = any(config_label['firstComment'] in note.body for note in existing_notes)
+
+        if first_comment_exists:
+            print(f"Work Item Name: {work_item.title}, #{work_item.iid}, needs a second reminder")
+            work_item.notes.create({'body': config_label['secondComment Name:']})
+            if project['labelTag'] not in labels:
+                labels.append(project['labelTag'])
+                work_item.labels = labels
+                work_item.save()
+            return
+
+    if updated_at <= past_first_business_date:
+        print(f"Work Item Name: {work_item.title}, #{work_item.iid}, needs a first reminder")
+        work_item.notes.create({'body': config_label['firstComment']})
+        if project['labelTag'] not in labels:
+            labels.append(project['labelTag'])
+            work_item.labels = labels
+            work_item.save()
+
 def updateWorkItems(gl, config):
     '''
-    Reads Gitlab Work Items, Matches on updated data, labels and comments, Then updates the Work Item accordingly    
-        Parameters:
-            gl: Todays date
-            config: Yaml file containing project Id, list of labels to match on, Day threshold, and comments to match on and update with
+    Reads Gitlab Work Items, Matches on updated data, labels and comments, Then updates the Work Item accordingly
     '''
     if config['projects']:
         for project in config['projects']:
             print(f"Running through project {project['projectId']}, Checking for Issues and Epics that need to be updated")
             gitlab_project = gl.projects.get(project['projectId'])
+            
+            # Check issues
             work_items = gitlab_project.issues.list(state="opened", all=True)
+            today = date.today()
 
             for work_item in work_items:
-                ### This is a debug Statement, Remove once done Debuging ###
-                print(f"Work Item Title: {work_item.title}, Work Item IID {work_item.iid}, Work Item Type {work_item.type}")
-                updated_at = work_item.updated_at
+                print(f"Issue Title: {work_item.title}, IID: {work_item.iid}")
+                updated_at = work_item.updated_at[:10]  # Extract only date part
                 labels = work_item.labels
+
                 for label in labels:
                     for config_label in project['labels']:
                         if label == config_label['name']:
-                            today = date.today()
-                            second_reminder_date = config_label['secondReminderDate']
-                            past_second_business_date = str(subtractBusinessDay(today, second_reminder_date))
-                            first_reminder_date = config_label['firstReminderDate']
-                            past_first_business_date = str(subtractBusinessDay(today, first_reminder_date))
+                            processWorkItem(work_item, config_label, project, labels, updated_at, today)
 
-                            if updated_at <= past_second_business_date:
-                                existing_notes = work_item.notes.list()
-                                first_comment_exists = any(config_label['firstComment'] in note.body for note in existing_notes)
+            # Check epics
+            if 'groupId' in project:
+                group = gl.groups.get(project['groupId'])
+                epics = group.epics.list(state="opened", all=True)
+                
+                for epic in epics:
+                    print(f"Epic Title: {epic.title}, IID: {epic.iid}")
+                    updated_at = epic.updated_at[:10]  # Extract only date part
+                    labels = epic.labels
 
-                                if first_comment_exists:
-                                    print(f"work item Name: {work_item.title}, #{work_item.iid}, needs a second reminder")
-                                    work_item.notes.create({'body': config_label['secondComment Name:']})
-                                    if project['labelTag'] not in labels:
-                                        labels.append(project['labelTag'])
-                                        work_item.labels = labels
-                                        work_item.save()
-                                    continue
-                        
-                            if updated_at <= past_first_business_date:
-                                print(f"Work Item Name: {work_item.title}, #{work_item.iid}, needs a first reminder")
-                                work_item.notes.create({'body': config_label['firstComment']})
-                                if project['labelTag'] not in labels:
-                                    labels.append(project['labelTag'])
-                                    work_item.labels = labels
-                                    work_item.save()
-
+                    for label in labels:
+                        for config_label in project['labels']:
+                            if label == config_label['name']:
+                                processWorkItem(epic, config_label, project, labels, updated_at, today)
 def main():
     '''
     Main fuction will take one argument (token: gitlab api token) and run updateIssue function
