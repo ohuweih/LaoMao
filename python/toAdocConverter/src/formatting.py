@@ -178,17 +178,28 @@ def resize_tables(content):
 #    content = re.sub(pattern, '[%autowidth.stretch,options="header"]', content)
     return content
 
-def fix_inbedded_header(content):
-    pattern = r"^(= .+?(\n(:.+?: .+?\n)*)?)"
-    match = re.search(pattern, content, re.MULTILINE | re.IGNORECASE)
-    if match:
-        header_text = match.group(1)  # Extract the full header section
-        plain_text_header = re.sub(r"^= ", "", header_text)  # Remove AsciiDoc formatting
-        content = re.sub(pattern, "", content, count=1, flags=re.MULTILINE | re.IGNORECASE)
-        content = f"{plain_text_header.strip()}\n\n{content.strip()}"
+import re
+
+def fix_table_headers(content):
+    table_pattern = r"(\[.*?(?:,)?\s*options=[\"']?headers?[\"']?,?.*?\]\n)?\|===\n((?:\|[^\n]+\n)+)\|===\n"
+
+    def check_columns(match):
+        attributes = match.group(1) or ""
+        table_body = match.group(2)
+        rows = table_body.strip().split("\n")
+        column_counts = [row.count("|") for row in rows]
+
+        if all(count == 1 for count in column_counts):
+            cleaned_attributes = re.sub(r',?\s*options=[\"']?headers?[\"']?,?', '', attributes).strip()
+            return f"{cleaned_attributes}\n|===\n{table_body}\n|===\n" if cleaned_attributes else f"|===\n{table_body}\n|===\n"
+        else:
+            return f"{attributes}|===\n{table_body}\n|===\n"
+
+    content = re.sub(table_pattern, check_columns, content, flags=re.MULTILINE)
     return content
 
+
 def fix_broken_list(content):
-    pattern = r"(^\* )\n([^\n]+)"
+    pattern = r"(^\* {blank})\n([^\n]+)"
     content = re.sub(pattern, r"\1\2", content, flags=re.MULTILINE)
     return content

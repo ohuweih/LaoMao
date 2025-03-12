@@ -66,7 +66,7 @@ def process_content(content, output_file):
     content = formatting.resize_tables(content)
 
     logging.info("Finding and extracting inbedded headers")
-    content = formatting.fix_inbedded_header(content)
+    content = formatting.fix_table_headers(content)
 
     logging.info("Finding and fixing broken lists")
     content = formatting.fix_broken_list(content)
