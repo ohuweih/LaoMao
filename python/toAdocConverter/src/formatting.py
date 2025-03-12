@@ -190,7 +190,13 @@ def fix_table_headers(content):
         column_counts = [row.count("|") for row in rows]
 
         if all(count == 1 for count in column_counts):
-            cleaned_attributes = re.sub(r',?\s*options=[\"']?headers?[\"']?,?', '', attributes).strip()
+            cleaned_attributes = re.sub(r'(,?\s*options=["\']?headers?["\']?,?)', '', attributes).strip()
+            
+            # Ensure proper syntax remains
+            cleaned_attributes = re.sub(r'\[\s*,', '[', cleaned_attributes)  # Fix leading comma issue
+            cleaned_attributes = re.sub(r',\s*\]', ']', cleaned_attributes)  # Fix trailing comma issue
+            cleaned_attributes = cleaned_attributes.replace("[]", "")  # Remove empty brackets
+            
             return f"{cleaned_attributes}\n|===\n{table_body}\n|===\n" if cleaned_attributes else f"|===\n{table_body}\n|===\n"
         else:
             return f"{attributes}|===\n{table_body}\n|===\n"
