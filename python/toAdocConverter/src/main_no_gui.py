@@ -6,6 +6,7 @@ import imageConverter
 import xlsxConverter
 import pandoc
 import pdfConverter
+from tqdm import tqdm
 
 # Configure logging
 logging.basicConfig(level=logging.INFO,
@@ -13,6 +14,9 @@ logging.basicConfig(level=logging.INFO,
                               logging.StreamHandler()])
         
 def process_content(content, output_file):
+    logging.info("Removing not normal spacing")
+    content = formatting.normalize_spaces(content)
+
     logging.info("Removing certain patterns in asciidoc file")
     content = formatting.remove_text_by_patterns(content)
 
@@ -43,9 +47,23 @@ def process_content(content, output_file):
     logging.info("fixing image file paths")
     content = formatting.fix_image_file_path(content, output_file)
 
+    logging.info("Cleaning unnamed columns for tables")
+    content = formatting.removing_unnamed_columns(content)
+
+    logging.info("Cleaning nan columns for tables")
+    content = formatting.removing_nan_columns(content)
+
     logging.info("Adding Marks for review")
     content = formatting.add_review_marker_for_images(content)
 
+    logging.info("Removing ToC")
+    content = formatting.remove_table_of_contents(content)
+
+    logging.info("Fixing Overview headers")
+    content = formatting.fix_overview_header(content)
+
+    logging.info("Resizeing Tables")
+    content = formatting.resize_tables(content)
     return content
 
 
@@ -55,7 +73,7 @@ def write_output(output_file, content):
         file.write(content)
 
 
-def fix_asciidoc(input_file, output_file):
+def fix_asciidoc(file_dir, input_file, output_file):
     #directory = pathlib.Path(input_file).parent
 
     logging.info("Read the initial asciidoc file...")
@@ -63,9 +81,36 @@ def fix_asciidoc(input_file, output_file):
         content = file.read()
 
     content = process_content(content, output_file)
-    write_output(f"{output_file}/{output_file}.adoc", content)
-    os.remove(input_file) 
-
+    if "LOE" in file_dir:
+        write_output(f"./project-management/modules/ROOT/pages/LOE/{output_file}.adoc", content)
+        os.remove(input_file) 
+    elif "BRD" in file_dir:
+        write_output(f"./project-management/modules/ROOT/pages/BRD/{output_file}.adoc", content)
+        os.remove(input_file) 
+    elif "CUS" in file_dir:
+        write_output(f"./project-management/modules/ROOT/pages/CUS/{output_file}.adoc", content)
+        os.remove(input_file) 
+    elif "EDBC" in file_dir:
+        write_output(f"./project-management/modules/ROOT/pages/EDBC/{output_file}.adoc", content)
+        os.remove(input_file) 
+    elif "FRO" in file_dir:
+        write_output(f"./project-management/modules/ROOT/pages/FRO/{output_file}.adoc", content)
+        os.remove(input_file) 
+    elif "INT" in file_dir:
+        write_output(f"./project-management/modules/ROOT/pages/INT/{output_file}.adoc", content)
+        os.remove(input_file) 
+    elif "Notices" in file_dir:
+        write_output(f"./project-management/modules/ROOT/pages/Notice/{output_file}.adoc", content)
+        os.remove(input_file) 
+    elif "REP" in file_dir:
+        write_output(f"./project-management/modules/ROOT/pages/REP/{output_file}.adoc", content)
+        os.remove(input_file) 
+    elif "SUP" in file_dir:
+        write_output(f"./project-management/modules/ROOT/pages/SUP/{output_file}.adoc", content)
+        os.remove(input_file) 
+    else:
+        write_output(f"./project-management/modules/ROOT/pages/General/{output_file}.adoc", content)
+        os.remove(input_file)
 
 
 
@@ -85,21 +130,28 @@ def main():
         file_name = os.path.basename(input)
         file_stem = os.path.splitext(file_name)[0]
 
+        print(f"File dir: {file_dir}")
+        print(f"File name: {file_name}")
+        print(f"File stem: {file_stem}")
+
         print(f"Processing: {input}")
 
 
         if ".docx" in input:
             media_folder = f"{file_stem}/extracted_media/"
             pandoc.run_pandoc(media_folder, input, f"{file_stem}")
-            fix_asciidoc(f"{file_stem}/{file_stem}_no_format.adoc", f"{file_stem}")
-            imageConverter.convert_images_to_png(media_folder)
+            fix_asciidoc(file_dir, f"{file_stem}/{file_stem}_no_format.adoc", f"{file_stem}")
+            imageConverter.convert_images_to_png(file_stem)
         elif ".xlsx" in input:
             image_output_dir = f"{file_stem}/extracted_images/"
             xlsxConverter.convert_xlsx_to_adoc_with_images(input, f"{file_stem}", image_output_dir)
+            fix_asciidoc(file_dir, f"{file_stem}/{file_stem}_no_format.adoc", f"{file_stem}")
         elif ".pdf" in input:
             text = pdfConverter.load_pdf_as_text(input)
-            pdfConverter.convert_text_to_asciidoc(text, {file_stem}/{file_stem}_no_format.adoc")
-            fix_asciidoc(f"{file_stem}/{file_stem}_no_format.adoc", f"{file_stem}")                                   
+            print(f"PDF Text: {text}")
+            pdfConverter.convert_text_to_asciidoc(text, file_stem, f"{file_stem}/{file_stem}_no_format.adoc")
+            print("Writing to a file maybe")
+            fix_asciidoc(file_dir, f"{file_stem}/{file_stem}_no_format.adoc", f"{file_stem}") 
         else:
             print("File not supported: Expected a docx or xlsx file")
         print(f"Completed: {input}\n")

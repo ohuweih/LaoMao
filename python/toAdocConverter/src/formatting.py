@@ -1,6 +1,9 @@
 import re
 import logging
 
+def normalize_spaces(content):
+    return content.replace("\xa0", " ")
+
 def escape_double_angle_brackets(content):
     pattern = r"<<(.*?)>>"
     return re.sub(pattern, r"\<<\1>>", content)
@@ -114,7 +117,7 @@ def add_links_to_bibliography(content, keys):
 
 
 def remove_bad_plus_syntax(content):
-    pattern = "\+\+"
+    pattern = r"\++"
     return re.sub(pattern, '', content)
 
 def replace_image_suffix_to_png(content):
@@ -125,12 +128,53 @@ def replace_image_suffix_to_png(content):
     return content
 
 def fix_image_file_path(content, output_file):
-    pattern = f"{output_file}/extracted_media/media/"
-    content = re.sub(pattern, 'extracted_media/media/', content)
+    pattern = f"{output_file}/media/"
+    content = re.sub(pattern, f'../_images/{output_file}/media/', content)
+    return content
+
+def removing_unnamed_columns(content):
+    pattern = r"^|\bUnnamed: \d+\s*"
+    content = re.sub(pattern, '', content)
+    pattern2 = r"\^\|\|"
+    content = re.sub(pattern2, '', content)
+    pattern3 = r"\^\|"
+    content = re.sub(pattern3, '', content)
+    return content
+
+
+def removing_nan_columns(content):
+    pattern = "NaN"
+    content = re.sub(pattern, '', content)
+    pattern2 = "nan"
+    content = re.sub(pattern2, '', content)
     return content
 
 def add_review_marker_for_images(content):
-    pattern = r"(image:extracted_media/media/.*)"
-    review_marker = "**======================PLEASE REVIEW HERE======================**\n"
+    pattern = r"(image::)"
+    review_marker = "**======================PLEASE REVIEW HERE======================**\n\n"
+    pattern2 = r"(image:)"
     content = re.sub(pattern, rf"{review_marker}\1", content)
+    content = re.sub(pattern2, rf"{review_marker}\1", content)
     return content
+
+def remove_table_of_contents(content):
+    pattern = r'(?s)^== Table of Contents\s*.*?(?=^==\s*\S)'
+    content = re.sub(pattern, '', content, flags=re.MULTILINE | re.IGNORECASE)
+    pattern2 = r'(?s)^\*Table of Contents\*\s*.*?(?=^==\s*\S)'
+    content = re.sub(pattern2, '____\n\n', content, flags=re.MULTILINE | re.IGNORECASE)
+    pattern3 = '____'
+    content = re.sub(pattern3, '', content)
+    return content
+
+def fix_overview_header(content):
+    pattern = r'(^==)\s+Document Overview'
+    content = re.sub(pattern, r'\1 Document Overview', content, flags=re.MULTILINE | re.IGNORECASE)
+    pattern2 = r'^\s*==\s*$'
+    content = re.sub(pattern2, '', content, flags=re.MULTILINE)
+    return content
+
+def resize_tables(content):
+#    pattern = r'\[width=[^\],]+,\s*cols="[^"]+",\s*options="header",?\]'
+#    content = re.sub(pattern, '[%autowidth.stretch,options="header"]', content)
+    return content
+

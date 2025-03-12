@@ -114,12 +114,12 @@ def main():
                     print("Converting images to png")
                     imageConverter.convert_images_to_png(media_folder)
         elif ".xlsx" in input:
+            image_output_dir = f"{file_stem}/extracted_images/"
             for step in tqdm(xlsx_steps, desc="Overall Progress", unit="step"):
                 if step == "Determine if docx or xlsx":
                     print("Detected xlsx file")
                 if step == "Extract Images":
                     print("Extract Images")
-                    image_output_dir = f"{file_stem}/extracted_images/"
                 if step == "Converting xlsx":
                     print("Doing Initail Convertion")
                     print("Formatting as best we can")

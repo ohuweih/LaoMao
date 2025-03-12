@@ -16,14 +16,14 @@ def run_pandoc(media_folder, input_file, output_file):
 #        return
     
     try:
-        if not os.path.exists(media_folder): 
-            os.makedirs(media_folder)
+        if not os.path.exists(output_file): 
+            os.makedirs(output_file)
         command = [
             "pandoc",  # Use the found Pandoc executable
             "-f", "docx",
             "-t", "asciidoc",
             "--default-image-extension", ".png",
-            "--extract-media", media_folder,
+            "--extract-media", output_file,
             "-o", f"{output_file}/{output_file}_no_format.adoc",
             input_file
         ]
