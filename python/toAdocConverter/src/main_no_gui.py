@@ -70,6 +70,9 @@ def process_content(content, output_file):
 
     logging.info("Finding and fixing broken lists")
     content = formatting.fix_broken_list(content)
+
+    logging.info("Finding and fixing broken lists")
+    content = formatting.fix_broken_list_2(content)
     return content
 
 
