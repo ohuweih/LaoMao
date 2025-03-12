@@ -1,0 +1,22 @@
+variables:
+  BRANCHNAME:
+    options:
+    - "1-test-change-request"
+    - "39-cr-852598-brd"
+    - "39-cr-852598-brd-2"
+    - "40-cr-852598-loe"
+    - "41-cr-852598-design"
+    - "41-cr-852598-design-2"
+    - "41-cr-852598-design-3"
+    - "41-cr-852598-design-30e54d11b74cd50e"
+    - "41-cr-852598-design-4"
+    - "41-cr-852598-design-5"
+    - "46-cr-844122-design"
+    - "46-cr-844122-design-2"
+    - "57-change-862577-brd"
+    - "CR-852598"
+    - "feature/converter/development"
+    - "feature/development"
+    - "feature/epics_refactor/development"
+    - "feature/wiki/development"
+    - "main"

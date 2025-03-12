@@ -178,3 +178,17 @@ def resize_tables(content):
 #    content = re.sub(pattern, '[%autowidth.stretch,options="header"]', content)
     return content
 
+def fix_inbedded_header(content):
+    pattern = r"^(= .+?(\n(:.+?: .+?\n)*)?)"
+    match = re.search(pattern, content, re.MULTILINE | re.IGNORECASE)
+    if match:
+        header_text = match.group(1)  # Extract the full header section
+        plain_text_header = re.sub(r"^= ", "", header_text)  # Remove AsciiDoc formatting
+        content = re.sub(pattern, "", content, count=1, flags=re.MULTILINE | re.IGNORECASE)
+        content = f"{plain_text_header.strip()}\n\n{content.strip()}"
+    return content
+
+def fix_broken_list(content):
+    pattern = r"(^\* )\n([^\n]+)"
+    content = re.sub(pattern, r"\1\2", content, flags=re.MULTILINE)
+    return content
