@@ -83,6 +83,10 @@ def convert_xlsx_to_adoc_with_images(input_file, output_file, image_output_dir):
         
         with open(output_file, 'w', encoding='utf-8') as adoc_file: 
             for sheet_name in excel_data.sheet_names:
+                if "archive" in sheet_name.lower():
+                    print(f"Skipping archived sheet: {sheet_name}")
+                    continue
+                
                 adoc_file.write(f"# {sheet_name}\n\n")
 
                 df = excel_data.parse(sheet_name, header=None)
@@ -94,7 +98,8 @@ def convert_xlsx_to_adoc_with_images(input_file, output_file, image_output_dir):
                 df = pd.read_excel(input_file, sheet_name=sheet_name, header=first_non_empty_row)
                 
                 # Drop empty columns caused by merging
-                df = df.dropna(axis=1, how='all')
+                non_empty_headers = df.columns.notna()
+                df = df.loc[:, non_empty_headers | df.notna().any(axis=0)]
                 
                 # Fill down merged cell values for clarity
                 df = df.fillna(method='ffill')
