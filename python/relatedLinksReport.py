@@ -195,9 +195,7 @@ def collect_linked_issues(gl, project_id_lookup, issue_refs, visited_issues=None
 
         try:
             print("Trying linked issue loop")
-            issue = gl.projects.get(project_id).issues.get(issue_iid)
-            collected_issues.append(issue.attributes)
-            
+            issue = gl.projects.get(project_id).issues.get(issue_iid)            
             print(f"{'  ' * depth}Linked Issue {issue_iid} in project {project_id}")
 
             # Get related (linked) issues
@@ -232,36 +230,6 @@ def collect_all_linked_items(gl, group_id, epic):
         "epics": epics,
         "issues": issues
     }
-
-
-def write_issue_recursive(writer, issue, issue_lookup, visited, all_headers, depth=0):
-    issue_key = f"{issue['project_id']}:{issue['iid']}"
-    if issue_key in visited:
-        return
-    visited.add(issue_key)
-
-    label_data = extract_labels(issue)
-    extracted_fields = extract_all_headers(issue.get("description", ""))
-
-    all_headers.update(extracted_fields.keys())
-
-    row = {
-        "Issue ID": f"{'→' * depth} {issue['iid']}" if depth > 0 else issue["iid"],
-        "Release #": label_data["Release"],
-        "CR #": label_data["CR"],
-        **extracted_fields
-    }
-
-    writer.writerow(row)
-
-    # Now handle first linked issue
-    linked_refs = issue.get("_links_to", [])
-    for linked_ref in linked_refs:
-        linked_key = f"{linked_ref['project_id']}:{linked_ref['iid']}"
-        linked_issue = issue_lookup.get(linked_key)
-        if linked_issue:
-            write_issue_recursive(writer, linked_issue, issue_lookup, visited, all_headers, depth + 1)
-
 
 
 
@@ -299,6 +267,7 @@ def generate_audit_report(gl, group_id, config, output_file):
 
         row = {
             "Issue ID": f"{'→' * depth} {issue['iid']}" if depth > 0 else issue["iid"],
+            "Depth": depth,
             "Issue Title": issue['title'],
             "Release #": label_data["Release"],
             "CR #": label_data["CR"],
@@ -317,7 +286,7 @@ def generate_audit_report(gl, group_id, config, output_file):
         walk_and_collect(issue)
 
     # Now we know all headers
-    fieldnames = ["Issue ID", "Issue Title", "Release #", "CR #"] + sorted(all_headers)
+    fieldnames = ["Issue ID", "Depth", "Issue Title", "Release #", "CR #"] + sorted(all_headers)
 
     with open(output_file, mode="w", newline="", encoding="utf-8") as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
